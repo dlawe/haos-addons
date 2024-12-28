@@ -3,6 +3,10 @@
 set -x  # Aktiviert ausführliches Debugging
 echo "Vertragsmanager Webserver wird gestartet..."
 
+# Kopiere den Inhalt des lokalen 'www' Verzeichnisses ins Container-Verzeichnis '/config/www'
+COPY ./www /config/www
+
+
 # Definiere das Verzeichnis, in dem die Webdateien liegen (z.B. www)
 WEB_DIR="/config/www"
 
