@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv bashio
 
+set -x  # Aktiviert ausführliches Debugging
 echo "Vertragsmanager Webserver wird gestartet..."
-
-# Starte den Webserver auf Port 8080 und lausche auf alle Netzwerk-Interfaces
-python3 -m http.server 8080 --bind 0.0.0.0
+PORT=$(bashio::addon.ingress_port)
+python3 -m http.server "${PORT}" --bind 0.0.0.0
