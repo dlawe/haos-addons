@@ -1,15 +1,13 @@
 <!-- https://developers.home-assistant.io/docs/add-ons/presentation#keeping-a-changelog -->
 
-## 1.2.0
+# Changelog
 
-- Add an apparmor profile
-- Update to 3.15 base image with s6 v3
-- Add a sample script to run as service and constrain in aa profile
+## [1.0.0] - 2024-12-28
+### Hinzugefügt:
+- Erstversion des Vertragsmanagers.
+- Möglichkeit, Verträge hinzuzufügen und zu verwalten.
+- Benachrichtigungen für bevorstehende Fristen.
 
-## 1.1.0
+### Fixes:
+- Keine bekannten Fehler in dieser Version.
 
-- Updates
-
-## 1.0.0
-
-- Initial release
