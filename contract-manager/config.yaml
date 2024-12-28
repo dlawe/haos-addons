@@ -3,6 +3,7 @@ description: "Verwalte deine Verträge einfach und übersichtlich."
 version: "1.0.0"
 slug: "contract_manager"
 init: false
+panel_icon: mdi:file-document
 webui: "[PROTO:ssl]://[HOST]:[PORT:8080]"
 arch:
   - aarch64
