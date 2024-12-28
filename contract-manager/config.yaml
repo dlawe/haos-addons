@@ -4,6 +4,9 @@ version: "1.0.0"
 slug: "contract_manager"
 init: false
 webui: "[PROTO:ssl]://[HOST]:[PORT:8080]"
+ingress: true
+ingress_port: 0
+ingress_stream: true
 arch:
   - aarch64
   - amd64
