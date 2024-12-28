@@ -1,4 +1,4 @@
 # https://developers.home-assistant.io/docs/add-ons/repository#repository-configuration
 name: Dlawe haos addons repository
 url: 'https://github.com/dlawe/haos-addons'
-maintainer: Awesome Maintainer <ewald.pruss@outlook.com>
+maintainer: Ewald Pruss <ewald.pruss@outlook.com>
