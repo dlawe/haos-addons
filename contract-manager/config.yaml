@@ -17,9 +17,3 @@ arch:
   - i386
 ports:
   8080/tcp: 8080
-schema:
-  ingress_port: int
-options:
-  ingress_port: 1339
-backup_exclude:
-  - "**/logs/*"
