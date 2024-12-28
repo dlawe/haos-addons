@@ -12,6 +12,7 @@ WORKDIR /data
 
 # Kopiere die Dateien ins Arbeitsverzeichnis
 COPY run.sh /run.sh
+COPY ./www /config/www
 
 # Setze die Ausführungsrechte für das Skript
 RUN chmod a+x /run.sh
