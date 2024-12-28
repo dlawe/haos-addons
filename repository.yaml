@@ -1,4 +1,4 @@
 # https://developers.home-assistant.io/docs/add-ons/repository#repository-configuration
-name: Example Home Assistant add-on repository
+name: Dlawe haos addons repository
 url: 'https://github.com/dlawe/haos-addons'
 maintainer: Awesome Maintainer <awesome@example.com>
