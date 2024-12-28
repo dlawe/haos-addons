@@ -1,6 +1,6 @@
 name: "Vertragsmanager"
 description: "Verwalte deine Verträge einfach und übersichtlich."
-version: "1.0.0"
+version: "1.0.1"
 slug: "contract_manager"
 init: false
 arch:
@@ -11,4 +11,9 @@ arch:
   - i386
 startup: services
 ports:
-  8080/tcp: 8080
+  8080/tcp: 8080  # Intern der Port für den Webserver
+
+# Web UI Konfiguration
+webui: "http://localhost:8080"  # Stelle sicher, dass dies mit der URL des Webservers übereinstimmt.
+
+# Wenn gewünscht, kannst du hier noch weitere Optionen anpassen

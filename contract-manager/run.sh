@@ -1,7 +1,6 @@
 #!/usr/bin/with-contenv bashio
 
-# Beispiel: Start eines Webservers oder eines Skripts
-echo "Vertragsmanager Add-on gestartet."
+echo "Vertragsmanager Webserver wird gestartet..."
 
-# Beispiel: Starte einen Python Webserver, um Verträge zu verwalten
-python3 -m http.server 8080
+# Starte den Webserver auf Port 8080, nur für lokale Anfragen
+python3 -m http.server 8080 --bind 0.0.0.0

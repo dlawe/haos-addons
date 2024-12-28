@@ -2,6 +2,10 @@
 
 # Changelog
 
+## [1.0.1] - 2024-12-28
+### Hinzugefügt:
+- WEB-UI Hinzugefügt
+
 ## [1.0.0] - 2024-12-28
 ### Hinzugefügt:
 - Erstversion des Vertragsmanagers.
