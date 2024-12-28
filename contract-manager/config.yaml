@@ -3,7 +3,7 @@ name: Vertrags Manager
 version: "0.1.0"
 slug: contract-manager
 description: Verwalte deine Verträge in Home Assistant
-url: "https://github.com/home-assistant/addons-example/tree/main/contract-manager"
+url: "https://github.com/dlawe/haos-addons/tree/main/contract-manager"
 arch:
   - armhf
   - armv7
