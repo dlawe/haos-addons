@@ -3,4 +3,4 @@
 echo "Vertragsmanager Webserver wird gestartet..."
 
 # Starte den Webserver auf Port 8080, nur für lokale Anfragen
-python3 -m http.server 8020 
+python3 -m http.server 8080 
