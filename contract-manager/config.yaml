@@ -8,7 +8,7 @@ startup: services
 ingress: true
 ingress_port: 1337
 ingress_stream: true
-webui: "http://[HOST]:8080"
+webui: null
 arch:
   - aarch64
   - amd64
