@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vertragsmanager Dashboard</title>
+  <link rel="stylesheet" href="/local/styles.css"> <!-- Verlinkung zur CSS-Datei -->
+</head>
+<body>
+
+  <!-- Header und Navigation -->
+  <header>
+    <h1>Vertragsmanager</h1>
+    <div class="tabs">
+      <button class="tab" onclick="showTab('overview')">Übersicht</button>
+      <button class="tab" onclick="showTab('contracts')">Alle Verträge</button>
+      <button class="tab" onclick="showTab('reports')">Berichte</button>
+      <button class="tab" onclick="showTab('settings')">Einstellungen</button>
+    </div>
+  </header>
+
+  <!-- Main Content Bereich -->
+  <div id="content">
+    <div id="overview" class="tab-content">
+      <h2>Übersicht</h2>
+      <!-- Hier kommen die Kacheln und Statistiken -->
+    </div>
+
+    <div id="contracts" class="tab-content" style="display:none;">
+      <h2>Alle Verträge</h2>
+      <!-- Liste der Verträge -->
+    </div>
+
+    <div id="reports" class="tab-content" style="display:none;">
+      <h2>Berichte</h2>
+      <!-- Statistiken und Diagramme -->
+    </div>
+
+    <div id="settings" class="tab-content" style="display:none;">
+      <h2>Einstellungen</h2>
+      <!-- Konfiguration und Einstellungen -->
+    </div>
+  </div>
+
+  <script src="/local/script.js"></script> <!-- Verlinkung zur JavaScript-Datei -->
+</body>
+</html>
