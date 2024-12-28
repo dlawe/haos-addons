@@ -14,6 +14,11 @@ Der **Vertragsmanager** ist ein einfaches, aber leistungsstarkes Add-on für Hom
 ## Verwendungszweck:
 Mit diesem Add-on kannst du deine Verträge digitalisieren und die Verwaltung der verschiedenen Fristen automatisieren, damit du nie wieder einen wichtigen Vertrag verpasst.
 
+![Supports aarch64 Architecture][aarch64-shield]
+![Supports amd64 Architecture][amd64-shield]
+![Supports armhf Architecture][armhf-shield]
+![Supports armv7 Architecture][armv7-shield]
+![Supports i386 Architecture][i386-shield]
 
 [aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
 [amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
