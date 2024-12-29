@@ -1,3 +1,65 @@
+<?php
+// Verbindung zur SQLite-Datenbank herstellen
+$db = new SQLite3('/data/contracts.db');
+
+// Funktionen für die Statistiken
+function getActiveContractsCount($db) {
+    return $db->querySingle("
+        SELECT COUNT(*) 
+        FROM contracts 
+        WHERE canceled = 0 AND (end_date IS NULL OR end_date > date('now'))
+    ");
+}
+
+function getLongTermContractsCount($db) {
+    return $db->querySingle("
+        SELECT COUNT(*) 
+        FROM contracts 
+        WHERE duration >= 12
+    ");
+}
+
+function getMonthlyContractsCount($db) {
+    return $db->querySingle("
+        SELECT COUNT(*) 
+        FROM contracts 
+        WHERE duration = 1
+    ");
+}
+
+function getExpiringContractsCount($db) {
+    return $db->querySingle("
+        SELECT COUNT(*) 
+        FROM contracts 
+        WHERE canceled = 0 
+        AND end_date BETWEEN date('now') AND date('now', '+30 days') 
+        AND cancellation_date < date('now', '+30 days')
+    ");
+}
+
+// Filter aus der URL verarbeiten
+$filter = $_GET['filter'] ?? 'all';
+$search = $_GET['search'] ?? '';
+
+$query = "SELECT * FROM contracts";
+if ($filter === 'active') {
+    $query .= " WHERE canceled = 0 AND (end_date IS NULL OR end_date > date('now'))";
+} elseif ($filter === 'longterm') {
+    $query .= " WHERE duration >= 12";
+} elseif ($filter === 'monthly') {
+    $query .= " WHERE duration = 1";
+} elseif ($filter === 'expiring') {
+    $query .= " WHERE canceled = 0 
+                AND end_date BETWEEN date('now') AND date('now', '+30 days') 
+                AND cancellation_date < date('now', '+30 days')";
+}
+if (!empty($search)) {
+    $query .= ($filter !== 'all' ? " AND" : " WHERE") . " (name LIKE '%$search%' OR provider LIKE '%$search%')";
+}
+
+$contracts = $db->query($query);
+?>
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -71,7 +133,7 @@
         <!-- Header: Suchleiste und Button -->
         <div class="header">
             <form class="d-flex flex-grow-1" method="GET" action="">
-                <input type="text" class="form-control" name="search" placeholder="Nach Name oder Anbieter suchen..." value="<?= htmlspecialchars($search ?? ''); ?>">
+                <input type="text" class="form-control" name="search" placeholder="Nach Name oder Anbieter suchen..." value="<?= htmlspecialchars($search); ?>">
             </form>
             <a href="add_contract.php" class="btn btn-primary px-4 py-2">Neuen Vertrag hinzufügen</a>
         </div>
