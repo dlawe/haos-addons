@@ -1,65 +1,3 @@
-<?php
-// Verbindung zur SQLite-Datenbank herstellen
-$db = new SQLite3('/data/contracts.db');
-
-// Funktionen für die Statistiken
-function getActiveContractsCount($db) {
-    return $db->querySingle("
-        SELECT COUNT(*) 
-        FROM contracts 
-        WHERE canceled = 0 AND (end_date IS NULL OR end_date > date('now'))
-    ");
-}
-
-function getLongTermContractsCount($db) {
-    return $db->querySingle("
-        SELECT COUNT(*) 
-        FROM contracts 
-        WHERE duration >= 12
-    ");
-}
-
-function getMonthlyContractsCount($db) {
-    return $db->querySingle("
-        SELECT COUNT(*) 
-        FROM contracts 
-        WHERE duration = 1
-    ");
-}
-
-function getExpiringContractsCount($db) {
-    return $db->querySingle("
-        SELECT COUNT(*) 
-        FROM contracts 
-        WHERE canceled = 0 
-        AND end_date BETWEEN date('now') AND date('now', '+30 days') 
-        AND cancellation_date < date('now', '+30 days')
-    ");
-}
-
-// Filter aus der URL verarbeiten
-$filter = $_GET['filter'] ?? 'all';
-$search = $_GET['search'] ?? '';
-
-$query = "SELECT * FROM contracts";
-if ($filter === 'active') {
-    $query .= " WHERE canceled = 0 AND (end_date IS NULL OR end_date > date('now'))";
-} elseif ($filter === 'longterm') {
-    $query .= " WHERE duration >= 12";
-} elseif ($filter === 'monthly') {
-    $query .= " WHERE duration = 1";
-} elseif ($filter === 'expiring') {
-    $query .= " WHERE canceled = 0 
-                AND end_date BETWEEN date('now') AND date('now', '+30 days') 
-                AND cancellation_date < date('now', '+30 days')";
-}
-if (!empty($search)) {
-    $query .= ($filter !== 'all' ? " AND" : " WHERE") . " (name LIKE '%$search%' OR provider LIKE '%$search%')";
-}
-
-$contracts = $db->query($query);
-?>
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -70,6 +8,21 @@ $contracts = $db->query($query);
     <style>
         body {
             background-color: #f8f9fa;
+        }
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .header input {
+            flex: 1;
+            min-width: 200px;
+        }
+        .header .btn {
+            white-space: nowrap;
         }
         .card {
             margin: 10px;
@@ -89,19 +42,25 @@ $contracts = $db->query($query);
         }
         .table-container {
             margin-top: 20px;
+            overflow-x: auto; /* Scrollbare Tabelle */
         }
         .table {
             font-size: 0.9rem;
+            border-collapse: collapse;
+            min-width: 800px; /* Mindestbreite */
         }
-        .search-bar {
-            margin-bottom: 20px;
+        .table th {
+            position: sticky;
+            top: 0;
+            background-color: #fff;
+            z-index: 2;
         }
-        .row-cols-4 > .col {
-            flex: 0 0 25%;
+        .table th, .table td {
+            text-align: center;
+            padding: 10px;
         }
-        .icon {
-            font-size: 1.5rem;
-            margin-right: 10px;
+        .table-hover tbody tr:hover {
+            background-color: #f1f1f1;
         }
     </style>
 </head>
@@ -109,21 +68,21 @@ $contracts = $db->query($query);
     <div class="container">
         <h1 class="text-center my-4">Vertragsübersicht</h1>
 
-        <!-- Button und Suchleiste -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <form class="search-bar w-50" method="GET" action="">
-                <input type="text" class="form-control" name="search" placeholder="Nach Name oder Anbieter suchen..." value="<?= htmlspecialchars($search); ?>">
+        <!-- Header: Suchleiste und Button -->
+        <div class="header">
+            <form class="d-flex flex-grow-1" method="GET" action="">
+                <input type="text" class="form-control" name="search" placeholder="Nach Name oder Anbieter suchen..." value="<?= htmlspecialchars($search ?? ''); ?>">
             </form>
-            <a href="add_contract.php" class="btn btn-primary">Neuen Vertrag hinzufügen</a>
+            <a href="add_contract.php" class="btn btn-primary px-4 py-2">Neuen Vertrag hinzufügen</a>
         </div>
 
         <!-- Übersicht der Statistiken -->
-        <div class="row row-cols-4 gx-3 gy-3">
+        <div class="row row-cols-1 row-cols-md-4 gx-3 gy-3">
             <div class="col">
                 <a href="index.php?filter=active" class="text-decoration-none">
                     <div class="card text-white bg-primary">
                         <div class="card-body">
-                            <h5 class="card-title text-center"><i class="icon bi bi-check-circle"></i>Aktive Verträge</h5>
+                            <h5 class="card-title text-center">Aktive Verträge</h5>
                             <p class="card-text text-center"><?= getActiveContractsCount($db); ?></p>
                         </div>
                     </div>
@@ -133,7 +92,7 @@ $contracts = $db->query($query);
                 <a href="index.php?filter=longterm" class="text-decoration-none">
                     <div class="card text-white bg-success">
                         <div class="card-body">
-                            <h5 class="card-title text-center"><i class="icon bi bi-calendar-range"></i>Langzeitverträge</h5>
+                            <h5 class="card-title text-center">Langzeitverträge</h5>
                             <p class="card-text text-center"><?= getLongTermContractsCount($db); ?></p>
                         </div>
                     </div>
@@ -143,7 +102,7 @@ $contracts = $db->query($query);
                 <a href="index.php?filter=monthly" class="text-decoration-none">
                     <div class="card text-white bg-warning">
                         <div class="card-body">
-                            <h5 class="card-title text-center"><i class="icon bi bi-calendar2-week"></i>Monatsverträge</h5>
+                            <h5 class="card-title text-center">Monatsverträge</h5>
                             <p class="card-text text-center"><?= getMonthlyContractsCount($db); ?></p>
                         </div>
                     </div>
@@ -153,7 +112,7 @@ $contracts = $db->query($query);
                 <a href="index.php?filter=expiring" class="text-decoration-none">
                     <div class="card text-white bg-danger">
                         <div class="card-body">
-                            <h5 class="card-title text-center"><i class="icon bi bi-alarm"></i>Ablaufende Verträge</h5>
+                            <h5 class="card-title text-center">Ablaufende Verträge</h5>
                             <p class="card-text text-center"><?= getExpiringContractsCount($db); ?></p>
                         </div>
                     </div>
@@ -194,6 +153,5 @@ $contracts = $db->query($query);
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.js"></script>
 </body>
 </html>
