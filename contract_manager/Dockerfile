@@ -34,7 +34,8 @@ RUN chmod +x /run.sh
 RUN mkdir -p /etc/lighttpd && \
     echo 'server.modules += ( "mod_fastcgi" )' > /etc/lighttpd/lighttpd.conf && \
     echo 'fastcgi.server = ( ".php" => (( "bin-path" => "/usr/bin/php-cgi", "socket" => "/tmp/php.socket" )))' >> /etc/lighttpd/lighttpd.conf && \
-    echo 'server.document-root = "/var/www/html"' >> /etc/lighttpd/lighttpd.conf
+    echo 'server.indexfiles = ( "index.php", "index.html", "index.htm" )' >> /etc/lighttpd/lighttpd.conf && \
+	echo 'server.document-root = "/var/www/html"' >> /etc/lighttpd/lighttpd.conf
 
 VOLUME ["/data"]
 EXPOSE 80
