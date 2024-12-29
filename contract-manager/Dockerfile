@@ -7,17 +7,17 @@ RUN apk add --no-cache \
     python3 \
     py3-pip \
     sqlite \
-    php7 \
-    php7-sqlite3 \
-    php7-mbstring \
-    php7-session \
-    php7-json \
-    php7-openssl \
-    php7-pdo \
-    php7-pdo_sqlite \
-    php7-cli \
-    php7-fpm \
-    php7-cgi \
+    php \
+    php-sqlite3 \
+    php-mbstring \
+    php-session \
+    php-json \
+    php-openssl \
+    php-pdo \
+    php-pdo_sqlite \
+    php-cli \
+    php-fpm \
+    php-cgi \
     lighttpd \
     lighttpd-mod-fastcgi
 
@@ -40,9 +40,6 @@ RUN echo 'server.modules += ( "mod_fastcgi" )' >> /etc/lighttpd/lighttpd.conf &&
 
 # Definiere ein Volumen für persistente Daten
 VOLUME ["/data"]
-
-# Exponiere Standard-HTTP-Port (optional, falls nicht nur Ingress genutzt wird)
-EXPOSE 80
 
 # Startskript ausführen
 CMD ["/run.sh"]
