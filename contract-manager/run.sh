@@ -21,9 +21,12 @@ if [ ! -d "$WEB_DIR" ]; then
   exit 1
 fi
 
-# Abrufen des Ingress-Ports (dynamisch von Home Assistant zugewiesen)
+# Abrufen des Ingress-Ports
 PORT=$(bashio::addon.ingress_port)
 
-# Starte den Flask-Webserver
-echo "Starte Flask-Webserver auf Port ${PORT}..."
-python3 /app/app.py --port "${PORT}" --web-dir "${WEB_DIR}"
+# Lighttpd konfigurieren, um auf dem dynamischen Ingress-Port zu lauschen
+sed -i "s/server.port.*/server.port = ${PORT}/g" /etc/lighttpd/lighttpd.conf
+
+# Starte Lighttpd mit PHP-Unterstützung
+echo "Starte Lighttpd-Webserver auf Port ${PORT}..."
+lighttpd -f /etc/lighttpd/lighttpd.conf
