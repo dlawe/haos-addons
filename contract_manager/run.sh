@@ -59,7 +59,7 @@ echo 'server.bind = "0.0.0.0"' >> /etc/lighttpd/lighttpd.conf
 # ---------------------------------
 # 6) Verzeichnis für PHP-Socket anlegen (ohne chown)
 # ---------------------------------
-mkdir -p /var/run/lighttpd
+mkdir -p /var/run/lighttpd || true
 
 # ---------------------------------
 # 7) Lighttpd im Foreground starten (Debug/Don’t daemonize)
