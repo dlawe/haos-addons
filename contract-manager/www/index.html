@@ -32,18 +32,28 @@
   <p class="status" id="status">Teste Verbindung zur Datenbank...</p>
 
   <script>
-    // Funktion, um die Datenbankverbindung zu testen
-    fetch('/check_db')
+    // Automatischer API-Pfad über Ingress
+    const apiPath = `${window.location.origin}${window.location.pathname}check_db`;
+
+    // Verbindung zur Datenbank testen
+    fetch(apiPath)
       .then(response => {
         if (response.ok) {
+          return response.json();
+        } else {
+          throw new Error("Fehler bei der Anfrage");
+        }
+      })
+      .then(data => {
+        if (data.status === "success") {
           document.getElementById('status').textContent = "Datenbankverbindung erfolgreich!";
           document.getElementById('status').className = "status success";
         } else {
-          document.getElementById('status').textContent = "Fehler bei der Datenbankverbindung!";
+          document.getElementById('status').textContent = `Fehler: ${data.message}`;
           document.getElementById('status').className = "status error";
         }
       })
-      .catch(() => {
+      .catch(error => {
         document.getElementById('status').textContent = "Fehler: Verbindung konnte nicht hergestellt werden!";
         document.getElementById('status').className = "status error";
       });
