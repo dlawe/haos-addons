@@ -3,25 +3,50 @@
 $db = new SQLite3('/data/contracts.db');
 
 // Funktionen für die Statistiken
-function getTotalContracts($db) {
-    return $db->querySingle("SELECT COUNT(*) FROM contracts");
-}
-
-function getActiveContracts($db) {
-    return $db->querySingle("SELECT COUNT(*) FROM contracts WHERE canceled = 0 AND (end_date IS NULL OR end_date > date('now'))");
-}
-
-function getContractsPastCancellation($db) {
+function getActiveContractsCount($db) {
     return $db->querySingle("
         SELECT COUNT(*) 
         FROM contracts 
-        WHERE canceled = 0 
-        AND cancellation_date < date('now')
+        WHERE canceled = 0 AND (end_date IS NULL OR end_date > date('now'))
     ");
 }
 
-// Alle Verträge abrufen
-$allContracts = $db->query("SELECT * FROM contracts");
+function getLongTermContractsCount($db) {
+    return $db->querySingle("
+        SELECT COUNT(*) 
+        FROM contracts 
+        WHERE duration >= 12
+    ");
+}
+
+function getMonthlyContractsCount($db) {
+    return $db->querySingle("
+        SELECT COUNT(*) 
+        FROM contracts 
+        WHERE duration = 1
+    ");
+}
+
+// Aktive Verträge abrufen
+$activeContracts = $db->query("
+    SELECT * 
+    FROM contracts 
+    WHERE canceled = 0 AND (end_date IS NULL OR end_date > date('now'))
+");
+
+// Langzeitverträge abrufen
+$longTermContracts = $db->query("
+    SELECT * 
+    FROM contracts 
+    WHERE duration >= 12
+");
+
+// Monatsverträge abrufen
+$monthlyContracts = $db->query("
+    SELECT * 
+    FROM contracts 
+    WHERE duration = 1
+");
 ?>
 
 <!DOCTYPE html>
@@ -52,32 +77,32 @@ $allContracts = $db->query("SELECT * FROM contracts");
             <div class="col-md-4">
                 <div class="card text-white bg-primary">
                     <div class="card-body">
-                        <h5 class="card-title">Alle Verträge</h5>
-                        <p class="card-text display-4"><?= getTotalContracts($db); ?></p>
+                        <h5 class="card-title">Aktive Verträge</h5>
+                        <p class="card-text display-4"><?= getActiveContractsCount($db); ?></p>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card text-white bg-success">
                     <div class="card-body">
-                        <h5 class="card-title">Aktive Verträge</h5>
-                        <p class="card-text display-4"><?= getActiveContracts($db); ?></p>
+                        <h5 class="card-title">Langzeitverträge (12+ Monate)</h5>
+                        <p class="card-text display-4"><?= getLongTermContractsCount($db); ?></p>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card text-white bg-danger">
+                <div class="card text-white bg-warning">
                     <div class="card-body">
-                        <h5 class="card-title">Kündigungsfrist überschritten</h5>
-                        <p class="card-text display-4"><?= getContractsPastCancellation($db); ?></p>
+                        <h5 class="card-title">Monatsverträge (1 Monat)</h5>
+                        <p class="card-text display-4"><?= getMonthlyContractsCount($db); ?></p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Tabelle aller Verträge -->
+        <!-- Tabelle: Aktive Verträge -->
         <div class="table-container">
-            <h2>Alle Verträge</h2>
+            <h2>Aktive Verträge</h2>
             <table class="table table-striped">
                 <thead>
                     <tr>
@@ -87,12 +112,10 @@ $allContracts = $db->query("SELECT * FROM contracts");
                         <th>Kosten</th>
                         <th>Startdatum</th>
                         <th>Enddatum</th>
-                        <th>Kündigungsfrist</th>
-                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while ($row = $allContracts->fetchArray(SQLITE3_ASSOC)): ?>
+                    <?php while ($row = $activeContracts->fetchArray(SQLITE3_ASSOC)): ?>
                         <tr>
                             <td><?= htmlspecialchars($row['id']); ?></td>
                             <td><?= htmlspecialchars($row['name']); ?></td>
@@ -100,8 +123,64 @@ $allContracts = $db->query("SELECT * FROM contracts");
                             <td><?= number_format($row['cost'], 2, ',', '.'); ?> €</td>
                             <td><?= htmlspecialchars($row['start_date']); ?></td>
                             <td><?= htmlspecialchars($row['end_date']); ?></td>
-                            <td><?= htmlspecialchars($row['cancellation_date']); ?></td>
-                            <td><?= $row['canceled'] ? 'Gekündigt' : 'Aktiv'; ?></td>
+                        </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Tabelle: Langzeitverträge -->
+        <div class="table-container">
+            <h2>Langzeitverträge (12+ Monate)</h2>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Anbieter</th>
+                        <th>Kosten</th>
+                        <th>Startdatum</th>
+                        <th>Enddatum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ($row = $longTermContracts->fetchArray(SQLITE3_ASSOC)): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($row['id']); ?></td>
+                            <td><?= htmlspecialchars($row['name']); ?></td>
+                            <td><?= htmlspecialchars($row['provider']); ?></td>
+                            <td><?= number_format($row['cost'], 2, ',', '.'); ?> €</td>
+                            <td><?= htmlspecialchars($row['start_date']); ?></td>
+                            <td><?= htmlspecialchars($row['end_date']); ?></td>
+                        </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Tabelle: Monatsverträge -->
+        <div class="table-container">
+            <h2>Monatsverträge (1 Monat)</h2>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Anbieter</th>
+                        <th>Kosten</th>
+                        <th>Startdatum</th>
+                        <th>Enddatum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ($row = $monthlyContracts->fetchArray(SQLITE3_ASSOC)): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($row['id']); ?></td>
+                            <td><?= htmlspecialchars($row['name']); ?></td>
+                            <td><?= htmlspecialchars($row['provider']); ?></td>
+                            <td><?= number_format($row['cost'], 2, ',', '.'); ?> €</td>
+                            <td><?= htmlspecialchars($row['start_date']); ?></td>
+                            <td><?= htmlspecialchars($row['end_date']); ?></td>
                         </tr>
                     <?php endwhile; ?>
                 </tbody>
