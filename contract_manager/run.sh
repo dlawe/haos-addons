@@ -44,7 +44,12 @@ fi
 
 # 4) Lighttpd-Port anpassen
 if [ -f /etc/lighttpd/lighttpd.conf ]; then
-  sed -i "s/server.port.*/server.port = ${PORT}/g" /etc/lighttpd/lighttpd.conf
+  # Prüfen, ob server.port existiert, und entsprechend hinzufügen oder ersetzen
+  if ! grep -q "server.port" /etc/lighttpd/lighttpd.conf; then
+    echo "server.port = ${PORT}" >> /etc/lighttpd/lighttpd.conf
+  else
+    sed -i "s/server.port.*/server.port = ${PORT}/g" /etc/lighttpd/lighttpd.conf
+  fi
 else
   echo "Warnung: /etc/lighttpd/lighttpd.conf wurde nicht gefunden! Erstelle Standardkonfiguration..."
   cat <<EOL > /etc/lighttpd/lighttpd.conf
@@ -59,6 +64,7 @@ server.bind = "0.0.0.0"
 EOL
 fi
 
+# Lighttpd-Konfiguration prüfen
 lighttpd -t -f /etc/lighttpd/lighttpd.conf || {
   echo "Fehler: Ungültige Lighttpd-Konfiguration!"
   exit 1
