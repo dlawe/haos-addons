@@ -3,23 +3,25 @@ ARG BUILD_FROM=ghcr.io/hassio-addons/base:16.2.0
 FROM ${BUILD_FROM}
 
 # Installiere zusätzliche Pakete
-RUN apk add --no-cache \
-    python3 \
-    py3-pip \
-    sqlite \
-    php \
-    php-sqlite3 \
-    php-mbstring \
-    php-session \
-    php-json \
-    php-openssl \
-    php-pdo \
-    php-pdo_sqlite \
-    php-cli \
-    php-fpm \
-    php-cgi \
-    lighttpd \
-    lighttpd-mod-fastcgi
+RUN apk update && \
+    apk add --no-cache \
+        python3 \
+        py3-pip \
+        sqlite \
+        php \
+        php-sqlite3 \
+        php-mbstring \
+        php-session \
+        php-json \
+        php-openssl \
+        php-pdo \
+        php-pdo_sqlite \
+        php-cli \
+        php-fpm \
+        php-cgi \
+        lighttpd \
+        lighttpd-mod-fastcgi
+
 
 # Setze das Arbeitsverzeichnis für das Add-on
 WORKDIR /app
