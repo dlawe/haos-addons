@@ -44,7 +44,6 @@ fi
 # 4) Lighttpd-Port anpassen
 # ---------------------------------
 if [ -f /etc/lighttpd/lighttpd.conf ]; then
-  # Wir setzen den Port
   sed -i "s/server.port.*/server.port = ${PORT}/g" /etc/lighttpd/lighttpd.conf
 else
   echo "Warnung: /etc/lighttpd/lighttpd.conf wurde nicht gefunden!"
@@ -55,15 +54,12 @@ fi
 # ---------------------------------
 echo 'server.errorlog = "/dev/stderr"' >> /etc/lighttpd/lighttpd.conf
 echo 'accesslog.filename = "/dev/stdout"' >> /etc/lighttpd/lighttpd.conf
-
-# Optional: auf 0.0.0.0 binden
 echo 'server.bind = "0.0.0.0"' >> /etc/lighttpd/lighttpd.conf
 
 # ---------------------------------
-# 6) Verzeichnis für PHP-Socket anlegen und Berechtigungen setzen
+# 6) Verzeichnis für PHP-Socket anlegen (ohne chown)
 # ---------------------------------
 mkdir -p /var/run/lighttpd
-chown -R lighttpd:lighttpd /var/run/lighttpd
 
 # ---------------------------------
 # 7) Lighttpd im Foreground starten (Debug/Don’t daemonize)

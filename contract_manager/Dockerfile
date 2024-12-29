@@ -3,13 +3,9 @@ FROM ${BUILD_FROM}
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Jetzt fügen wir python3 hinzu:
-RUN apk add --no-cache python3
-
-# (Und falls du später noch pip brauchst, z. B. für externe Python-Pakete, kannst du es direkt mitinstallieren.)
-# RUN apk add --no-cache python3 py3-pip
-
+# Python + PHP + Lighttpd etc. installieren
 RUN apk add --no-cache \
+    python3 \
     php \
     php-sqlite3 \
     php-mbstring \
@@ -24,14 +20,18 @@ RUN apk add --no-cache \
     lighttpd \
     bash
 
-WORKDIR /app
+# /var/run/lighttpd vorbereiten + Eigentümer setzen
+RUN mkdir -p /var/run/lighttpd \
+    && chown -R lighttpd:lighttpd /var/run/lighttpd
 
+WORKDIR /app
 COPY run.sh /run.sh
 COPY init_db.py /app/init_db.py
 COPY www /var/www/html
 
 RUN chmod +x /run.sh
 
+# Lighttpd-Konfiguration einrichten...
 RUN mkdir -p /etc/lighttpd && \
     echo 'server.modules += ( "mod_fastcgi" )' > /etc/lighttpd/lighttpd.conf && \
     echo 'fastcgi.server = ( ".php" => (( "bin-path" => "/usr/bin/php-cgi", "socket" => "/var/run/lighttpd/php.socket" )))' >> /etc/lighttpd/lighttpd.conf && \
