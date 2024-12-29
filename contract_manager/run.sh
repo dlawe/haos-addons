@@ -1,12 +1,15 @@
 #!/usr/bin/with-contenv bashio
 
-set -x  # Debugging aktivieren
+set -x
 echo "Vertragsmanager Add-on wird gestartet..."
 
-# ---------------------------------
 # 1) Datenbank initialisieren
-# ---------------------------------
 DB_FILE="/data/contracts.db"
+if [ ! -d "/data" ]; then
+  echo "Fehler: /data-Verzeichnis existiert nicht oder ist nicht gemountet!"
+  exit 1
+fi
+
 if [ ! -f "$DB_FILE" ]; then
   echo "SQLite-Datenbank wird initialisiert..."
   python3 /app/init_db.py || { 
@@ -17,9 +20,7 @@ else
   echo "Datenbank existiert bereits: $DB_FILE"
 fi
 
-# ---------------------------------
 # 2) Web-Verzeichnis prüfen
-# ---------------------------------
 WEB_DIR="/var/www/html"
 if [ ! -d "$WEB_DIR" ]; then
   echo "Verzeichnis $WEB_DIR existiert nicht! Erstelle es ..."
@@ -29,36 +30,41 @@ if [ ! -d "$WEB_DIR" ]; then
   }
 fi
 
-# ---------------------------------
+if [ ! -f "$WEB_DIR/index.php" ]; then
+  echo "Fehler: index.php fehlt im Web-Verzeichnis $WEB_DIR!"
+  exit 1
+fi
+
 # 3) Ingress-Port abfragen (Bashio)
-# ---------------------------------
 PORT=$(bashio::addon.ingress_port 2>/dev/null || true)
 if [ -z "$PORT" ] || [ "$PORT" = "null" ]; then
   echo "Kein Ingress-Port gefunden, Standardport wird verwendet: 80"
   PORT=80
-else
-  echo "Ingress-Port ermittelt: $PORT"
 fi
 
-# ---------------------------------
 # 4) Lighttpd-Port anpassen
-# ---------------------------------
 if [ -f /etc/lighttpd/lighttpd.conf ]; then
   sed -i "s/server.port.*/server.port = ${PORT}/g" /etc/lighttpd/lighttpd.conf
 else
-  echo "Warnung: /etc/lighttpd/lighttpd.conf wurde nicht gefunden!"
+  echo "Warnung: /etc/lighttpd/lighttpd.conf wurde nicht gefunden! Erstelle Standardkonfiguration..."
+  cat <<EOL > /etc/lighttpd/lighttpd.conf
+server.modules += ( "mod_fastcgi" )
+fastcgi.server = ( ".php" => (( "bin-path" => "/usr/bin/php-cgi", "socket" => "/tmp/php.socket" )))
+server.indexfiles = ( "index.php", "index.html", "index.htm" )
+server.document-root = "$WEB_DIR"
+server.port = $PORT
+server.errorlog = "/dev/stderr"
+accesslog.filename = "/dev/stdout"
+server.bind = "0.0.0.0"
+EOL
 fi
 
-# ---------------------------------
-# 5) Log-Ausgaben in Container-Logs umleiten
-# ---------------------------------
-echo 'server.errorlog = "/dev/stderr"' >> /etc/lighttpd/lighttpd.conf
-echo 'accesslog.filename = "/dev/stdout"' >> /etc/lighttpd/lighttpd.conf
-echo 'server.bind = "0.0.0.0"' >> /etc/lighttpd/lighttpd.conf
+lighttpd -t -f /etc/lighttpd/lighttpd.conf || {
+  echo "Fehler: Ungültige Lighttpd-Konfiguration!"
+  exit 1
+}
 
-# ---------------------------------
-# 6) Lighttpd im Foreground starten (Debug/Don’t daemonize)
-# ---------------------------------
+# 5) Lighttpd starten
 echo "Starte Lighttpd-Webserver auf Port ${PORT}..."
 lighttpd -D -f /etc/lighttpd/lighttpd.conf || { 
   echo "Fehler beim Start von Lighttpd!"
