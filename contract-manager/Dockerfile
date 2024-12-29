@@ -1,4 +1,4 @@
-# Base image für Home Assistant
+# Basis-Image für Home Assistant
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
@@ -8,16 +8,22 @@ RUN apk add --no-cache \
   py3-pip \
   sqlite  # SQLite für die Datenbank hinzufügen
 
-# Setze das Arbeitsverzeichnis für das Add-on
+# Arbeitsverzeichnis im Container setzen
 WORKDIR /app
 
 # Kopiere die Skripte ins Arbeitsverzeichnis
 COPY run.sh /run.sh
+COPY app.py /app/app.py
 COPY init_db.py /app/init_db.py
+
+# Kopiere statische Dateien ins www-Verzeichnis
 COPY ./www /config/www
 
-# Setze die Ausführungsrechte für das Startskript
+# Setze Berechtigungen für die Skripte
 RUN chmod a+x /run.sh
+
+# Installiere Python-Pakete (z.B. Flask)
+RUN pip install flask
 
 # Definiere ein Volumen für persistente Daten
 VOLUME [ "/data" ]

@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv bashio
 
-set -x  # Aktiviert ausführliches Debugging
+set -x  # Debugging aktivieren
 echo "Vertragsmanager Addon wird gestartet..."
 
 # Datenbankinitialisierung
@@ -12,19 +12,18 @@ else
   echo "Datenbank existiert bereits: $DB_FILE"
 fi
 
-# Definiere das Verzeichnis, in dem die Webdateien liegen (z.B. www)
+# Verzeichnis für statische Dateien
 WEB_DIR="/config/www"
 
-# Stelle sicher, dass das Verzeichnis existiert
+# Stelle sicher, dass das Verzeichnis für die statischen Dateien existiert
 if [ ! -d "$WEB_DIR" ]; then
   echo "Fehler: Das Verzeichnis $WEB_DIR existiert nicht!"
   exit 1
 fi
 
-# Abrufen des Ingress-Ports
+# Abrufen des Ingress-Ports (dynamisch von Home Assistant zugewiesen)
 PORT=$(bashio::addon.ingress_port)
 
-# Starte den Python-HTTP-Server im richtigen Verzeichnis
-cd "$WEB_DIR"
-echo "Starte Webserver auf Port ${PORT}..."
-python3 -m http.server "${PORT}" --bind 0.0.0.0
+# Starte den Flask-Webserver
+echo "Starte Flask-Webserver auf Port ${PORT}..."
+python3 /app/app.py --port "${PORT}" --web-dir "${WEB_DIR}"
