@@ -7,7 +7,7 @@ echo "Vertragsmanager Addon wird gestartet..."
 DB_FILE="/data/contracts.db"
 if [ ! -f "$DB_FILE" ]; then
   echo "SQLite-Datenbank wird initialisiert..."
-  python3 /app/init_db.py
+  python3 /app/init_db.py || { echo "Fehler bei der Datenbankinitialisierung!"; exit 1; }
 else
   echo "Datenbank existiert bereits: $DB_FILE"
 fi
@@ -22,11 +22,18 @@ if [ ! -d "$WEB_DIR" ]; then
 fi
 
 # Abrufen des Ingress-Ports
-PORT=$(bashio::addon.ingress_port)
+PORT=$(bashio::addon.ingress_port || echo "Ingress-Port konnte nicht abgerufen werden!")
 
 # Lighttpd konfigurieren, um auf dem dynamischen Ingress-Port zu lauschen
-sed -i "s/server.port.*/server.port = ${PORT}/g" /etc/lighttpd/lighttpd.conf
+if [ -n "$PORT" ]; then
+  sed -i "s/server.port.*/server.port = ${PORT}/g" /etc/lighttpd/lighttpd.conf || {
+    echo "Fehler bei der Anpassung der Lighttpd-Konfiguration!"
+    exit 1
+  }
+else
+  echo "Standardport wird verwendet, da kein Ingress-Port angegeben ist."
+fi
 
 # Starte Lighttpd mit PHP-Unterstützung
 echo "Starte Lighttpd-Webserver auf Port ${PORT}..."
-lighttpd -f /etc/lighttpd/lighttpd.conf
+lighttpd -f /etc/lighttpd/lighttpd.conf || { echo "Fehler beim Start von Lighttpd!"; exit 1; }

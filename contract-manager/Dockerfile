@@ -1,48 +1,54 @@
-# Basis-Image für Home Assistant Add-ons
-ARG BUILD_FROM=ghcr.io/hassio-addons/base:16.2.0
-FROM ${BUILD_FROM}
+# Basis-Image auf Ubuntu setzen
+FROM ubuntu:latest
 
-# Installiere zusätzliche Pakete
-RUN apk update && \
-    apk add --no-cache \
+# Umgebungsvariablen für nicht-interaktive Installation setzen
+ENV DEBIAN_FRONTEND=noninteractive
+
+# System aktualisieren und benötigte Pakete installieren
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
         python3 \
-        py3-pip \
-        sqlite \
+        python3-pip \
+        sqlite3 \
         php \
         php-sqlite3 \
         php-mbstring \
-        php-session \
         php-json \
         php-openssl \
         php-pdo \
-        php-pdo_sqlite \
         php-cli \
         php-fpm \
         php-cgi \
         lighttpd \
-        lighttpd-mod-fastcgi
+        && apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-
-# Setze das Arbeitsverzeichnis für das Add-on
+# Arbeitsverzeichnis festlegen
 WORKDIR /app
 
-# Kopiere die Skripte und statischen Dateien
+# Skripte und statische Dateien kopieren
 COPY run.sh /run.sh
 COPY init_db.py /app/init_db.py
 COPY ./www /config/www
 
-# Setze Berechtigungen für das Startskript
-RUN chmod a+x /run.sh
+# Ausführungsrechte für das Startskript setzen
+RUN chmod +x /run.sh
 
-# Konfiguriere Lighttpd (PHP FastCGI-Integration)
-RUN mkdir -p /etc/lighttpd && \
-    echo 'server.modules += ( "mod_fastcgi" )' >> /etc/lighttpd/lighttpd.conf && \
-    echo 'fastcgi.server = ( ".php" => (( "bin-path" => "/usr/bin/php-cgi", "socket" => "/tmp/php.socket" )))' >> /etc/lighttpd/lighttpd.conf && \
+# Lighttpd für PHP konfigurieren
+RUN mkdir -p /etc/lighttpd/conf-available && \
+    echo 'server.modules += ( "mod_fastcgi" )' > /etc/lighttpd/conf-available/15-fastcgi-php.conf && \
+    echo 'fastcgi.server = ( ".php" => ((' >> /etc/lighttpd/conf-available/15-fastcgi-php.conf && \
+    echo '    "bin-path" => "/usr/bin/php-cgi",' >> /etc/lighttpd/conf-available/15-fastcgi-php.conf && \
+    echo '    "socket" => "/var/run/lighttpd/php.socket"' >> /etc/lighttpd/conf-available/15-fastcgi-php.conf && \
+    echo ')))' >> /etc/lighttpd/conf-available/15-fastcgi-php.conf && \
+    ln -s /etc/lighttpd/conf-available/15-fastcgi-php.conf /etc/lighttpd/conf-enabled/15-fastcgi-php.conf && \
     echo 'server.document-root = "/config/www"' >> /etc/lighttpd/lighttpd.conf
 
-# Definiere ein Volumen für persistente Daten
+# Verzeichnis für persistente Daten definieren
 VOLUME ["/data"]
 
+# Exponiere den Standard-HTTP-Port
+EXPOSE 80
 
 # Startskript ausführen
 CMD ["/run.sh"]
