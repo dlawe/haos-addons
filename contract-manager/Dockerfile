@@ -1,8 +1,8 @@
-# Base image für Home Assistant
-ARG BUILD_FROM
-FROM $BUILD_FROM
+# Basis-Image für Home Assistant Add-ons
+ARG BUILD_FROM=ghcr.io/hassio-addons/base:16.2.0
+FROM ${BUILD_FROM}
 
-# Installiere notwendige Pakete
+# Installiere zusätzliche Pakete
 RUN apk add --no-cache \
     python3 \
     py3-pip \
@@ -33,13 +33,14 @@ COPY ./www /config/www
 RUN chmod a+x /run.sh
 
 # Konfiguriere Lighttpd (PHP FastCGI-Integration)
-RUN mkdir -p /etc/lighttpd
-RUN echo 'server.modules += ( "mod_fastcgi" )' >> /etc/lighttpd/lighttpd.conf && \
+RUN mkdir -p /etc/lighttpd && \
+    echo 'server.modules += ( "mod_fastcgi" )' >> /etc/lighttpd/lighttpd.conf && \
     echo 'fastcgi.server = ( ".php" => (( "bin-path" => "/usr/bin/php-cgi", "socket" => "/tmp/php.socket" )))' >> /etc/lighttpd/lighttpd.conf && \
     echo 'server.document-root = "/config/www"' >> /etc/lighttpd/lighttpd.conf
 
 # Definiere ein Volumen für persistente Daten
 VOLUME ["/data"]
+
 
 # Startskript ausführen
 CMD ["/run.sh"]
