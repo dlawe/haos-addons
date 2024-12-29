@@ -20,22 +20,6 @@ RUN apk add --no-cache \
     php7-cgi \
     lighttpd \
     lighttpd-mod-fastcgi
-  python3 \
-  py3-pip \
-  sqlite \
-  php8 \
-  php8-sqlite3 \
-  php8-mbstring \
-  php8-session \
-  php8-json \
-  php8-openssl \
-  php8-pdo \
-  php8-pdo_sqlite \
-  php8-cli \
-  php8-fpm \
-  php8-cgi \
-  lighttpd \
-  lighttpd-mod-fastcgi
 
 # Setze das Arbeitsverzeichnis für das Add-on
 WORKDIR /app
