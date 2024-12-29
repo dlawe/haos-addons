@@ -28,6 +28,9 @@ COPY run.sh /run.sh
 COPY init_db.py /app/init_db.py
 COPY www /var/www/html
 
+# Debug: Zeig mal an, was jetzt in /var/www/html liegt
+RUN ls -l /var/www/html
+
 RUN chmod +x /run.sh
 
 # Lighttpd-Konfiguration: fastcgi.server verweist auf /tmp/php.socket
