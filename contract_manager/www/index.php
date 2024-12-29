@@ -72,13 +72,19 @@ $contracts = $db->query($query);
             height: 150px;
         }
         .card h5 {
-            font-size: 1.2rem;
+            font-size: 1rem;
         }
         .card .card-text {
-            font-size: 2.5rem;
+            font-size: 1.5rem;
         }
         .table-container {
             margin-top: 20px;
+        }
+        .table {
+            font-size: 0.9rem;
+        }
+        .row-cols-4 > .col {
+            flex: 0 0 25%; /* Kacheln auf 4 Spalten beschränken */
         }
     </style>
 </head>
@@ -92,12 +98,12 @@ $contracts = $db->query($query);
         </div>
 
         <!-- Übersicht der Statistiken -->
-        <div class="row row-cols-1 row-cols-md-4">
+        <div class="row row-cols-4 gx-3 gy-3">
             <div class="col">
                 <a href="index.php?filter=active" class="text-decoration-none">
                     <div class="card text-white bg-primary">
                         <div class="card-body">
-                            <h5 class="card-title">Aktive Verträge</h5>
+                            <h5 class="card-title text-center">Aktive Verträge</h5>
                             <p class="card-text text-center"><?= getActiveContractsCount($db); ?></p>
                         </div>
                     </div>
@@ -107,7 +113,7 @@ $contracts = $db->query($query);
                 <a href="index.php?filter=longterm" class="text-decoration-none">
                     <div class="card text-white bg-success">
                         <div class="card-body">
-                            <h5 class="card-title">Langzeitverträge</h5>
+                            <h5 class="card-title text-center">Langzeitverträge</h5>
                             <p class="card-text text-center"><?= getLongTermContractsCount($db); ?></p>
                         </div>
                     </div>
@@ -117,7 +123,7 @@ $contracts = $db->query($query);
                 <a href="index.php?filter=monthly" class="text-decoration-none">
                     <div class="card text-white bg-warning">
                         <div class="card-body">
-                            <h5 class="card-title">Monatsverträge</h5>
+                            <h5 class="card-title text-center">Monatsverträge</h5>
                             <p class="card-text text-center"><?= getMonthlyContractsCount($db); ?></p>
                         </div>
                     </div>
@@ -127,7 +133,7 @@ $contracts = $db->query($query);
                 <a href="index.php?filter=expiring" class="text-decoration-none">
                     <div class="card text-white bg-danger">
                         <div class="card-body">
-                            <h5 class="card-title">Ablaufende Verträge</h5>
+                            <h5 class="card-title text-center">Ablaufende Verträge</h5>
                             <p class="card-text text-center"><?= getExpiringContractsCount($db); ?></p>
                         </div>
                     </div>
@@ -138,7 +144,7 @@ $contracts = $db->query($query);
         <!-- Tabelle mit den Verträgen -->
         <div class="table-container">
             <h2>Verträge anzeigen</h2>
-            <table class="table table-striped">
+            <table class="table table-striped table-hover">
                 <thead>
                     <tr>
                         <th>#</th>
