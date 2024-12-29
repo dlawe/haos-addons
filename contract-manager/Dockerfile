@@ -4,6 +4,22 @@ FROM $BUILD_FROM
 
 # Installiere notwendige Pakete
 RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    sqlite \
+    php7 \
+    php7-sqlite3 \
+    php7-mbstring \
+    php7-session \
+    php7-json \
+    php7-openssl \
+    php7-pdo \
+    php7-pdo_sqlite \
+    php7-cli \
+    php7-fpm \
+    php7-cgi \
+    lighttpd \
+    lighttpd-mod-fastcgi
   python3 \
   py3-pip \
   sqlite \
