@@ -95,6 +95,11 @@ $expiringContracts = $db->query("
     <div class="container">
         <h1 class="text-center my-4">Vertragsübersicht</h1>
 
+        <!-- Button zum Hinzufügen eines neuen Vertrags -->
+        <div class="text-end mb-3">
+            <a href="add_contract.php" class="btn btn-primary">Neuen Vertrag hinzufügen</a>
+        </div>
+
         <!-- Übersicht der Statistiken -->
         <div class="row">
             <div class="col-md-3">
