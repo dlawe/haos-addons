@@ -17,8 +17,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $end_date = $_POST['end_date'];
     $duration = (int)$_POST['duration'];
     $cancellation_period = (int)$_POST['cancellation_period'];
-    $category_id = (int)$_POST['category_id'];
-    $contract_type_id = (int)$_POST['contract_type_id'];
+
+    // Kategorie verarbeiten (existierend oder neu)
+    $category_name = htmlspecialchars($_POST['category_name']);
+    if (!empty($category_name)) {
+        // Neue Kategorie speichern, falls sie nicht existiert
+        $stmt = $db->prepare("INSERT OR IGNORE INTO categories (category_name) VALUES (:category_name)");
+        $stmt->bindValue(':category_name', $category_name, SQLITE3_TEXT);
+        $stmt->execute();
+
+        // Kategorie-ID abrufen
+        $category_id = $db->querySingle("SELECT id FROM categories WHERE category_name = :category_name", true, [':category_name' => $category_name]);
+    } else {
+        $category_id = (int)$_POST['category_id'];
+    }
+
+    // Vertragstyp verarbeiten (existierend oder neu)
+    $contract_type_name = htmlspecialchars($_POST['contract_type_name']);
+    if (!empty($contract_type_name)) {
+        // Neuen Vertragstyp speichern, falls er nicht existiert
+        $stmt = $db->prepare("INSERT OR IGNORE INTO contract_types (type_name) VALUES (:type_name)");
+        $stmt->bindValue(':type_name', $contract_type_name, SQLITE3_TEXT);
+        $stmt->execute();
+
+        // Vertragstyp-ID abrufen
+        $contract_type_id = $db->querySingle("SELECT id FROM contract_types WHERE type_name = :type_name", true, [':type_name' => $contract_type_name]);
+    } else {
+        $contract_type_id = (int)$_POST['contract_type_id'];
+    }
+
+    // Kündigungsdatum berechnen
     $cancellation_date = date('Y-m-d', strtotime("$end_date -$cancellation_period months"));
 
     // SQL zum Einfügen des neuen Vertrags
@@ -97,19 +125,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="mb-3">
                 <label for="category_id" class="form-label">Kategorie</label>
-                <select class="form-control" id="category_id" name="category_id" required>
+                <select class="form-control" id="category_id" name="category_id">
+                    <option value="">Bitte wählen oder eingeben</option>
                     <?php while ($row = $categories->fetchArray(SQLITE3_ASSOC)): ?>
                         <option value="<?= $row['id']; ?>"><?= htmlspecialchars($row['category_name']); ?></option>
                     <?php endwhile; ?>
                 </select>
+                <input type="text" class="form-control mt-2" id="category_name" name="category_name" placeholder="Neue Kategorie hinzufügen">
             </div>
             <div class="mb-3">
                 <label for="contract_type_id" class="form-label">Vertragstyp</label>
-                <select class="form-control" id="contract_type_id" name="contract_type_id" required>
+                <select class="form-control" id="contract_type_id" name="contract_type_id">
+                    <option value="">Bitte wählen oder eingeben</option>
                     <?php while ($row = $contractTypes->fetchArray(SQLITE3_ASSOC)): ?>
                         <option value="<?= $row['id']; ?>"><?= htmlspecialchars($row['type_name']); ?></option>
                     <?php endwhile; ?>
                 </select>
+                <input type="text" class="form-control mt-2" id="contract_type_name" name="contract_type_name" placeholder="Neuen Vertragstyp hinzufügen">
             </div>
             <button type="submit" class="btn btn-success">Vertrag speichern</button>
             <a href="index.php" class="btn btn-secondary">Zurück zur Übersicht</a>
