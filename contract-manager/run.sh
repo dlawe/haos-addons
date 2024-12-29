@@ -28,7 +28,7 @@ if [ ! -d "$WEB_DIR" ]; then
 fi
 
 # Abrufen des Ingress-Ports
-PORT=$(bashio::addon.ingress_port || echo "Ingress-Port konnte nicht abgerufen werden!")
+PORT=$(bashio::addon.ingress_port || echo "Ingress-Port konnte nichtt abgerufen werden!")
 
 # Überprüfen des Ports und Standardport setzen, falls nicht verfügbar
 if [ -z "$PORT" ]; then
