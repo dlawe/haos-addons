@@ -100,6 +100,47 @@ $contracts = getContracts($db, $condition, $search);
         .container {
             padding-top: 70px; /* Platz für den Header einfügen */
         }
+        .card-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .card {
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            flex: 1;
+            max-width: 250px;
+        }
+        .filter-button {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .blue {
+            background-color: #007bff;
+        }
+        .green {
+            background-color: #28a745;
+        }
+        .orange {
+            background-color: #ffc107;
+        }
+        .red {
+            background-color: #dc3545;
+        }
+        .search-bar {
+            margin: 20px 0;
+        }
         .contract-card {
             background-color: white;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -141,11 +182,6 @@ $contracts = getContracts($db, $condition, $search);
             font-size: 0.85rem;
             color: #777;
         }
-        .card-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
     </style>
 </head>
 <body>
@@ -156,6 +192,39 @@ $contracts = getContracts($db, $condition, $search);
 
     <div class="container">
         <h1 class="text-center">Vertragsübersicht</h1>
+
+        <!-- Kacheln -->
+        <div class="card-container">
+            <div class="card">
+                <a href="index.php?filter=active" class="filter-button blue">
+                    <span><?= getContractsCount($db, "canceled = 0 AND (end_date IS NULL OR end_date > date('now'))"); ?> Aktive Verträge</span>
+                </a>
+                <a href="index.php?filter=longterm" class="filter-button green">
+                    <span><?= getContractsCount($db, "duration >= 12"); ?> Langzeitverträge</span>
+                </a>
+                <a href="index.php?filter=monthly" class="filter-button orange">
+                    <span><?= getContractsCount($db, "duration = 1"); ?> Monatsverträge</span>
+                </a>
+                <a href="index.php?filter=expiring" class="filter-button red">
+                    <span><?= getContractsCount($db, "canceled = 0 AND end_date BETWEEN date('now') AND date('now', '+30 days') AND cancellation_date < date('now', '+30 days')"); ?> Ablaufende Verträge</span>
+                </a>
+            </div>
+            <div class="card">
+                <h5>Gesamtkosten</h5>
+                <p><?= number_format($db->querySingle("SELECT SUM(cost) FROM contracts WHERE canceled = 0"), 2, ',', '.'); ?> €</p>
+            </div>
+        </div>
+
+        <!-- Suchleiste -->
+        <div class="search-bar">
+            <form method="GET" action="">
+                <input type="hidden" name="filter" value="<?= htmlspecialchars($filter); ?>">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="search" placeholder="Nach Vertrag oder Anbieter suchen..." value="<?= htmlspecialchars($search); ?>">
+                    <button class="btn btn-primary" type="submit">Suchen</button>
+                </div>
+            </form>
+        </div>
 
         <!-- Vertragskarten -->
         <div class="card-container">
