@@ -69,123 +69,125 @@ $contracts = $db->query($query);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background-color: #f8f9fa;
+            background-color: #f0f4f8;
+            color: #333;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
         }
         .header {
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            gap: 15px;
             margin-bottom: 20px;
         }
         .header input {
             flex: 1;
-            min-width: 200px;
+            margin-right: 10px;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
         .header .btn {
-            white-space: nowrap;
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            text-align: center;
         }
-        .card {
-            margin: 10px;
-            height: 150px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        .header .btn:hover {
+            background-color: #005a9e;
         }
-        .card:hover {
-            transform: scale(1.05);
-            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+        .stat-cards {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
         }
-        .card-title {
-            font-size: 1rem;
-            font-weight: bold;
+        .stat-card {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            border-radius: 4px;
+            color: white;
         }
-        .card-text {
-            font-size: 1.5rem;
+        .stat-card.blue {
+            background-color: #0078d4;
+        }
+        .stat-card.green {
+            background-color: #28a745;
+        }
+        .stat-card.yellow {
+            background-color: #ffc107;
+        }
+        .stat-card.red {
+            background-color: #dc3545;
         }
         .table-container {
             margin-top: 20px;
-            overflow-x: auto; /* Scrollbare Tabelle */
+            border-radius: 4px;
+            overflow: hidden;
+            background-color: white;
         }
         .table {
-            font-size: 0.9rem;
+            width: 100%;
             border-collapse: collapse;
-            min-width: 800px; /* Mindestbreite */
         }
         .table th {
-            position: sticky;
-            top: 0;
-            background-color: #fff;
-            z-index: 2;
-        }
-        .table th, .table td {
-            text-align: center;
+            background-color: #f9f9f9;
+            color: #555;
+            text-align: left;
             padding: 10px;
         }
-        .table-hover tbody tr:hover {
-            background-color: #f1f1f1;
+        .table td {
+            padding: 10px;
+            border-top: 1px solid #eee;
+        }
+        .table tbody tr:hover {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center my-4">Vertragsübersicht</h1>
+        <h1>Vertragsübersicht</h1>
 
         <!-- Header: Suchleiste und Button -->
         <div class="header">
             <form class="d-flex flex-grow-1" method="GET" action="">
                 <input type="text" class="form-control" name="search" placeholder="Nach Name oder Anbieter suchen..." value="<?= htmlspecialchars($search); ?>">
             </form>
-            <a href="add_contract.php" class="btn btn-primary px-4 py-2">Neuen Vertrag hinzufügen</a>
+            <a href="add_contract.php" class="btn">Neuen Vertrag hinzufügen</a>
         </div>
 
         <!-- Übersicht der Statistiken -->
-        <div class="row row-cols-1 row-cols-md-4 gx-3 gy-3">
-            <div class="col">
-                <a href="index.php?filter=active" class="text-decoration-none">
-                    <div class="card text-white bg-primary">
-                        <div class="card-body">
-                            <h5 class="card-title text-center">Aktive Verträge</h5>
-                            <p class="card-text text-center"><?= getActiveContractsCount($db); ?></p>
-                        </div>
-                    </div>
-                </a>
+        <div class="stat-cards">
+            <div class="stat-card blue">
+                <h2>Aktive Verträge</h2>
+                <p><?= getActiveContractsCount($db); ?></p>
             </div>
-            <div class="col">
-                <a href="index.php?filter=longterm" class="text-decoration-none">
-                    <div class="card text-white bg-success">
-                        <div class="card-body">
-                            <h5 class="card-title text-center">Langzeitverträge</h5>
-                            <p class="card-text text-center"><?= getLongTermContractsCount($db); ?></p>
-                        </div>
-                    </div>
-                </a>
+            <div class="stat-card green">
+                <h2>Langzeitverträge</h2>
+                <p><?= getLongTermContractsCount($db); ?></p>
             </div>
-            <div class="col">
-                <a href="index.php?filter=monthly" class="text-decoration-none">
-                    <div class="card text-white bg-warning">
-                        <div class="card-body">
-                            <h5 class="card-title text-center">Monatsverträge</h5>
-                            <p class="card-text text-center"><?= getMonthlyContractsCount($db); ?></p>
-                        </div>
-                    </div>
-                </a>
+            <div class="stat-card yellow">
+                <h2>Monatsverträge</h2>
+                <p><?= getMonthlyContractsCount($db); ?></p>
             </div>
-            <div class="col">
-                <a href="index.php?filter=expiring" class="text-decoration-none">
-                    <div class="card text-white bg-danger">
-                        <div class="card-body">
-                            <h5 class="card-title text-center">Ablaufende Verträge</h5>
-                            <p class="card-text text-center"><?= getExpiringContractsCount($db); ?></p>
-                        </div>
-                    </div>
-                </a>
+            <div class="stat-card red">
+                <h2>Ablaufende Verträge</h2>
+                <p><?= getExpiringContractsCount($db); ?></p>
             </div>
         </div>
 
         <!-- Tabelle mit den Verträgen -->
         <div class="table-container">
-            <h2>Verträge anzeigen</h2>
-            <table class="table table-striped table-hover">
+            <table class="table">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -213,7 +215,5 @@ $contracts = $db->query($query);
             </table>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
