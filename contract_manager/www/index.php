@@ -1,3 +1,48 @@
+<?php
+// Verbindung zur SQLite-Datenbank herstellen
+$db = new SQLite3('/data/contracts.db');
+
+// Funktionen für die Statistiken
+function getActiveContractsCount($db) {
+    return $db->querySingle("
+        SELECT COUNT(*) 
+        FROM contracts 
+        WHERE canceled = 0 AND (end_date IS NULL OR end_date > date('now'))
+    ");
+}
+
+function getLongTermContractsCount($db) {
+    return $db->querySingle("
+        SELECT COUNT(*) 
+        FROM contracts 
+        WHERE duration >= 12
+    ");
+}
+
+function getMonthlyContractsCount($db) {
+    return $db->querySingle("
+        SELECT COUNT(*) 
+        FROM contracts 
+        WHERE duration = 1
+    ");
+}
+
+function getExpiringContractsCount($db) {
+    return $db->querySingle("
+        SELECT COUNT(*) 
+        FROM contracts 
+        WHERE canceled = 0 
+        AND end_date BETWEEN date('now') AND date('now', '+30 days') 
+        AND cancellation_date < date('now', '+30 days')
+    ");
+}
+
+// Monatliche Kosten berechnen
+function getMonthlyCost($db) {
+    return $db->querySingle("SELECT SUM(cost) FROM contracts WHERE canceled = 0");
+}
+?>
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -108,8 +153,9 @@
                         <div>
                             <p class="stats">
                                 <?php
-                                $monthlyCost = $db->querySingle("SELECT SUM(cost) FROM contracts WHERE canceled = 0");
-                                echo number_format($monthlyCost, 2, ',', '.'); ?> €
+                                $monthlyCost = getMonthlyCost($db);
+                                echo $monthlyCost !== null ? number_format($monthlyCost, 2, ',', '.') . ' €' : '0,00 €';
+                                ?>
                             </p>
                             <p class="description">Gesamtkosten pro Monat</p>
                         </div>
