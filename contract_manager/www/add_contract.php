@@ -1,3 +1,55 @@
+<?php
+// Verbindung zur SQLite-Datenbank herstellen
+$db = new SQLite3('/data/contracts.db');
+
+// Verarbeitung des Formulars
+$message = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Eingabedaten sicher verarbeiten
+    $provider = htmlspecialchars($_POST['provider']);
+    $name = htmlspecialchars($_POST['name']);
+    $cost = (float)$_POST['cost'];
+    $start_date = $_POST['start_date'];
+    $end_date = $_POST['end_date'];
+    $duration = (int)$_POST['duration'];
+    $cancellation_period = (int)$_POST['cancellation_period'];
+    $contract_type = htmlspecialchars($_POST['contract_type']); // Eingabe für Vertragstyp
+
+    // Neuen Vertragstyp speichern, falls nicht vorhanden
+    $stmt = $db->prepare("INSERT OR IGNORE INTO contract_types (type_name) VALUES (:type_name)");
+    $stmt->bindValue(':type_name', $contract_type, SQLITE3_TEXT);
+    $stmt->execute();
+
+    // Vertragstyp-ID abrufen
+    $contract_type_id = $db->querySingle("SELECT id FROM contract_types WHERE type_name = '$contract_type'");
+
+    // Kündigungsdatum berechnen
+    $cancellation_date = date('Y-m-d', strtotime("$end_date -$cancellation_period months"));
+
+    // SQL zum Einfügen des neuen Vertrags
+    $stmt = $db->prepare("
+        INSERT INTO contracts (name, provider, cost, start_date, end_date, duration, cancellation_period, cancellation_date, contract_type_id) 
+        VALUES (:name, :provider, :cost, :start_date, :end_date, :duration, :cancellation_period, :cancellation_date, :contract_type_id)
+    ");
+    $stmt->bindValue(':name', $name, SQLITE3_TEXT);
+    $stmt->bindValue(':provider', $provider, SQLITE3_TEXT);
+    $stmt->bindValue(':cost', $cost, SQLITE3_FLOAT);
+    $stmt->bindValue(':start_date', $start_date, SQLITE3_TEXT);
+    $stmt->bindValue(':end_date', $end_date, SQLITE3_TEXT);
+    $stmt->bindValue(':duration', $duration, SQLITE3_INTEGER);
+    $stmt->bindValue(':cancellation_period', $cancellation_period, SQLITE3_INTEGER);
+    $stmt->bindValue(':cancellation_date', $cancellation_date, SQLITE3_TEXT);
+    $stmt->bindValue(':contract_type_id', $contract_type_id, SQLITE3_INTEGER);
+
+    // Vertrag einfügen und Feedback anzeigen
+    if ($stmt->execute()) {
+        $message = "Vertrag erfolgreich hinzugefügt!";
+    } else {
+        $message = "Fehler beim Hinzufügen des Vertrags.";
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -10,12 +62,6 @@
             background-color: #f0f4f8;
             font-family: Arial, sans-serif;
         }
-        h1 {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 20px;
-        }
         .form-container {
             max-width: 500px;
             margin: 0 auto;
@@ -24,46 +70,9 @@
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        .form-label {
-            font-size: 0.85rem;
-            color: #555;
-        }
-        .form-control {
-            font-size: 0.85rem;
-            padding: 6px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .btn {
-            font-size: 0.85rem;
-            padding: 8px 12px;
-            border-radius: 4px;
-        }
-        .btn-success {
-            background-color: #28a745;
-            border-color: #28a745;
-        }
-        .btn-success:hover {
-            background-color: #218838;
-        }
-        .btn-secondary {
-            background-color: #6c757d;
-            border-color: #6c757d;
-        }
-        .btn-secondary:hover {
-            background-color: #5a6268;
-        }
-        @media (max-width: 768px) {
-            .form-container {
-                padding: 10px;
-            }
-            h1 {
-                font-size: 1.1rem;
-            }
-            .btn {
-                font-size: 0.8rem;
-                padding: 6px 10px;
-            }
+        h1 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
         }
     </style>
     <script>
@@ -88,7 +97,6 @@
     <div class="container">
         <h1 class="text-center">Neuen Vertrag hinzufügen</h1>
         <div class="form-container">
-            <!-- Erfolg- oder Fehlermeldung -->
             <?php if (!empty($message)): ?>
                 <div class="alert <?= strpos($message, 'erfolgreich') !== false ? 'alert-success' : 'alert-danger'; ?>">
                     <?= $message; ?>
@@ -126,8 +134,8 @@
                     <input type="number" class="form-control" id="cancellation_period" name="cancellation_period" required>
                 </div>
                 <div class="mb-3">
-                    <label for="category" class="form-label">Kategorie</label>
-                    <input type="text" class="form-control" id="category" name="category" required>
+                    <label for="contract_type" class="form-label">Vertragstyp</label>
+                    <input type="text" class="form-control" id="contract_type" name="contract_type" required>
                 </div>
                 <div class="d-flex justify-content-between">
                     <button type="submit" class="btn btn-success">Vertrag speichern</button>
@@ -136,6 +144,5 @@
             </form>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
