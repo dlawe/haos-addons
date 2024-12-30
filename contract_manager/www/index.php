@@ -2,7 +2,12 @@
 // Verbindung zur SQLite-Datenbank herstellen
 $db = new SQLite3('/data/contracts.db');
 
-// Funktionen für die Statistiken
+// Funktionen für die Statistiken mit Singular/Plural-Text
+function formatCountText($count, $singular, $plural) {
+    return $count . ' ' . ($count === 1 ? $singular : $plural);
+}
+
+// Statistiken abrufen
 function getActiveContractsCount($db) {
     return $db->querySingle("
         SELECT COUNT(*) 
@@ -41,6 +46,13 @@ function getExpiringContractsCount($db) {
 function getMonthlyCost($db) {
     return $db->querySingle("SELECT SUM(cost) FROM contracts WHERE canceled = 0");
 }
+
+// Statistiken abrufen
+$activeContractsCount = getActiveContractsCount($db);
+$longTermContractsCount = getLongTermContractsCount($db);
+$monthlyContractsCount = getMonthlyContractsCount($db);
+$expiringContractsCount = getExpiringContractsCount($db);
+$monthlyCost = getMonthlyCost($db);
 ?>
 
 <!DOCTYPE html>
@@ -123,23 +135,19 @@ function getMonthlyCost($db) {
             <div class="card">
                 <div class="section">
                     <div class="section-icon blue"></div>
-                    <span class="stats"><?= getActiveContractsCount($db); ?></span>
-                    <span class="description">Aktive Verträge</span>
+                    <span class="stats"><?= formatCountText($activeContractsCount, 'Aktiver Vertrag', 'Aktive Verträge'); ?></span>
                 </div>
                 <div class="section">
                     <div class="section-icon green"></div>
-                    <span class="stats"><?= getLongTermContractsCount($db); ?></span>
-                    <span class="description">Langzeitverträge</span>
+                    <span class="stats"><?= formatCountText($longTermContractsCount, 'Langzeitvertrag', 'Langzeitverträge'); ?></span>
                 </div>
                 <div class="section">
                     <div class="section-icon orange"></div>
-                    <span class="stats"><?= getMonthlyContractsCount($db); ?></span>
-                    <span class="description">Monatsverträge</span>
+                    <span class="stats"><?= formatCountText($monthlyContractsCount, 'Monatsvertrag', 'Monatsverträge'); ?></span>
                 </div>
                 <div class="section">
                     <div class="section-icon red"></div>
-                    <span class="stats"><?= getExpiringContractsCount($db); ?></span>
-                    <span class="description">Ablaufende Verträge</span>
+                    <span class="stats"><?= formatCountText($expiringContractsCount, 'Ablaufender Vertrag', 'Ablaufende Verträge'); ?></span>
                 </div>
             </div>
             <!-- Zweite Kachel -->
@@ -147,10 +155,7 @@ function getMonthlyCost($db) {
                 <div class="section">
                     <div class="section-icon blue"></div>
                     <span class="stats">
-                        <?php
-                        $monthlyCost = getMonthlyCost($db);
-                        echo $monthlyCost !== null ? number_format($monthlyCost, 2, ',', '.') . ' €' : '0,00 €';
-                        ?>
+                        <?= number_format($monthlyCost ?? 0, 2, ',', '.') . ' €'; ?>
                     </span>
                     <span class="description">Gesamtkosten pro Monat</span>
                 </div>
