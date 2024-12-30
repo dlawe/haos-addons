@@ -3,6 +3,10 @@
 $db = new SQLite3('/data/contracts.db');
 
 // Funktionen für die Statistiken
+function getContractsCount($db, $condition = '1=1') {
+    return $db->querySingle("SELECT COUNT(*) FROM contracts WHERE $condition");
+}
+
 function getContracts($db, $condition = '1=1', $search = '') {
     $query = "SELECT * FROM contracts WHERE $condition";
     if (!empty($search)) {
@@ -103,11 +107,37 @@ $contracts = getContracts($db, $condition, $search);
             left: 0;
             border-radius: 0 0 15px 0;
         }
+        .search-bar {
+            margin: 20px 0;
+        }
+        .table-container {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 class="text-center">Vertragsübersicht</h1>
+
+        <!-- Übersicht -->
+        <div class="d-flex justify-content-between mb-4">
+            <div class="text-center">
+                <h5>Aktive Verträge</h5>
+                <p class="text-primary"><?= getContractsCount($db, "canceled = 0 AND (end_date IS NULL OR end_date > date('now'))"); ?></p>
+            </div>
+            <div class="text-center">
+                <h5>Langzeitverträge</h5>
+                <p class="text-success"><?= getContractsCount($db, "duration >= 12"); ?></p>
+            </div>
+            <div class="text-center">
+                <h5>Monatsverträge</h5>
+                <p class="text-warning"><?= getContractsCount($db, "duration = 1"); ?></p>
+            </div>
+            <div class="text-center">
+                <h5>Ablaufende Verträge</h5>
+                <p class="text-danger"><?= getContractsCount($db, "canceled = 0 AND end_date BETWEEN date('now') AND date('now', '+30 days') AND cancellation_date < date('now', '+30 days')"); ?></p>
+            </div>
+        </div>
 
         <!-- Suchleiste -->
         <div class="search-bar mb-4">
