@@ -47,11 +47,32 @@ $contracts = getContracts($db, $condition, $search);
             background-color: #f8f9fa;
             font-family: Arial, sans-serif;
         }
-        h1 {
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 56px;
+            background-color: #007bff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        .header h1 {
             font-size: 1.2rem;
+            margin: 0;
+        }
+        .header a {
+            color: white;
+            text-decoration: none;
             font-weight: bold;
-            margin-bottom: 20px;
-            color: #333;
+        }
+        .container {
+            padding-top: 70px; /* Platz für den Header einfügen */
         }
         .card-container {
             display: flex;
@@ -128,6 +149,11 @@ $contracts = getContracts($db, $condition, $search);
     </style>
 </head>
 <body>
+    <div class="header">
+        <h1>Vertragsmanager</h1>
+        <a href="add_contract.php">+ Vertrag hinzufügen</a>
+    </div>
+
     <div class="container">
         <h1 class="text-center">Vertragsübersicht</h1>
 
