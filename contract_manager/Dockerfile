@@ -44,8 +44,16 @@ RUN mkdir -p /etc/lighttpd && \
     echo 'server.bind = "0.0.0.0"' >> /etc/lighttpd/lighttpd.conf && \
     echo 'accesslog.filename = "/dev/stdout"' >> /etc/lighttpd/lighttpd.conf
 
+# PHP-Upload-Limits anpassen
+RUN echo 'upload_max_filesize = 10M' >> /usr/local/etc/php/php.ini && \
+    echo 'post_max_size = 10M' >> /usr/local/etc/php/php.ini && \
+    echo 'memory_limit = 128M' >> /usr/local/etc/php/php.ini
+
 # Überprüfung der Lighttpd-Konfiguration hinzufügen
 RUN lighttpd -t -f /etc/lighttpd/lighttpd.conf
+
+# Sicherstellen, dass Verzeichnisse vorhanden sind
+RUN mkdir -p /data/icons /data/pdfs && chmod -R 777 /data
 
 # Datenbankvolumen deklarieren
 VOLUME ["/data"]

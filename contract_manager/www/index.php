@@ -1,64 +1,29 @@
 <?php
-// Verbindung zur SQLite-Datenbank herstellen
-$db = new SQLite3('/data/contracts.db');
+// Verbindung zur Datenbank herstellen
+$db = new PDO('sqlite:/data/contracts.db');
 
-// Funktionen für die Statistiken
-function getContractsCount($db, $condition = '1=1') {
-    return $db->querySingle("SELECT COUNT(*) FROM contracts WHERE $condition");
-}
-
-function getContracts($db, $condition = '1=1', $search = '') {
-    $query = "SELECT * FROM contracts WHERE $condition";
-    if (!empty($search)) {
-        $query .= " AND (name LIKE '%$search%' OR provider LIKE '%$search%')";
-    }
-    return $db->query($query);
-}
-
-// Funktion zur Bestimmung der Klasse basierend auf dem Vertragsstatus
-function getCardClass($contract) {
-    $now = date('Y-m-d');
-
-    // 1. Rot: Vertrag läuft bald ab
-    if ($contract['canceled'] == 0 
-        && isset($contract['end_date']) 
-        && $contract['end_date'] <= date('Y-m-d', strtotime('+30 days'))) {
-        return 'border-red'; // Rot für ablaufende Verträge
-    }
-
-    // 2. Grün: Vertrag ist aktiv und läuft nicht bald ab
-    if ($contract['canceled'] == 0 
-        && (!isset($contract['end_date']) || $contract['end_date'] > $now)) {
-        return 'border-green'; // Grün für aktive Verträge
-    }
-
-    // 3. Grau: Vertrag ist deaktiviert oder gekündigt
-    if ($contract['canceled'] == 1) {
-        return 'border-gray'; // Grau für deaktivierte/kündigte Verträge
-    }
-
-    // Standard: Keine spezifische Farbe
-    return '';
-}
-
-// Filter aus der URL verarbeiten
+// Filteroptionen anwenden
 $filter = $_GET['filter'] ?? 'all';
-$search = $_GET['search'] ?? '';
+$whereClause = '';
 
-$condition = '1=1'; // Standardbedingung
-if ($filter === 'active') {
-    $condition = "canceled = 0 AND (end_date IS NULL OR end_date > date('now'))";
-} elseif ($filter === 'longterm') {
-    $condition = "duration >= 12";
-} elseif ($filter === 'monthly') {
-    $condition = "duration = 1";
-} elseif ($filter === 'expiring') {
-    $condition = "canceled = 0 
-                  AND end_date BETWEEN date('now') AND date('now', '+30 days') 
-                  AND cancellation_date < date('now', '+30 days')";
+switch ($filter) {
+    case 'active':
+        $whereClause = "WHERE end_date IS NULL OR date(end_date) > date('now')";
+        break;
+    case 'expiring':
+        $whereClause = "WHERE date(end_date) BETWEEN date('now') AND date('now', '+30 days')";
+        break;
+    case 'canceled':
+        $whereClause = "WHERE canceled = 1";
+        break;
+    default:
+        $whereClause = ""; // Zeige alle Verträge
 }
 
-$contracts = getContracts($db, $condition, $search);
+// Verträge aus der Datenbank abrufen
+$sql = "SELECT * FROM contracts $whereClause";
+$stmt = $db->query($sql);
+$contracts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -67,181 +32,138 @@ $contracts = getContracts($db, $condition, $search);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vertragsübersicht</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background-color: #f8f9fa;
             font-family: Arial, sans-serif;
-        }
-        .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 56px;
-            background-color: #007bff;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 15px;
-            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-        }
-        .header h1 {
-            font-size: 1.2rem;
             margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
         }
-        .header a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .container {
-            padding-top: 70px; /* Platz für den Header einfügen */
-        }
-        .card-container {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .card {
-            border-radius: 8px;
-            padding: 10px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            background-color: white;
-            flex: 1;
-            max-width: 250px;
-        }
-        .filter-button {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            text-decoration: none;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .blue {
-            background-color: #007bff;
-        }
-        .green {
-            background-color: #28a745;
-        }
-        .orange {
-            background-color: #ffc107;
-        }
-        .red {
-            background-color: #dc3545;
-        }
-        .search-bar {
+        h1 {
+            text-align: center;
+            color: #333;
             margin: 20px 0;
         }
-        .contract-card {
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            border-radius: 12px; /* Alle Seiten abgerundet */
-            width: 300px;
-            padding: 15px;
-            position: relative;
-            overflow: hidden;
+        .filter {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
             margin-bottom: 20px;
-            border-left: 8px solid transparent; /* Standardfarbig für die Karten */
         }
-        .border-red {
-            border-left-color: #dc3545; /* Rot für ablaufende Verträge */
+        .filter a {
+            text-decoration: none;
+            color: white;
+            background-color: #007BFF;
+            padding: 10px 20px;
+            border-radius: 5px;
         }
-        .border-green {
-            border-left-color: #28a745; /* Grün für aktive Verträge */
+        .filter a.active {
+            background-color: #0056b3;
         }
-        .border-gray {
-            border-left-color: #6c757d; /* Grau für deaktivierte/kündigte Verträge */
+        .container {
+            width: 90%;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
         }
-        .contract-card h5 {
-            font-size: 1rem;
-            font-weight: bold;
-            color: #007bff;
-            margin-bottom: 10px;
+        .contract-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            flex: 1 1 calc(33.333% - 20px);
+            max-width: calc(33.333% - 20px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .contract-card .provider {
-            font-size: 0.9rem;
-            color: #555;
-            margin-bottom: 10px;
+        .contract-card img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-bottom: 15px;
         }
-        .contract-card .cost {
-            font-size: 1rem;
-            font-weight: bold;
-            color: #28a745;
-            margin-bottom: 10px;
+        .contract-card h2 {
+            font-size: 1.2em;
+            margin: 10px 0;
+            color: #444;
         }
-        .contract-card .dates {
-            font-size: 0.85rem;
-            color: #777;
+        .contract-card p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .contract-card a {
+            margin-top: 10px;
+            display: inline-block;
+            color: #007BFF;
+            text-decoration: none;
+        }
+        .contract-card a:hover {
+            text-decoration: underline;
+        }
+        .actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        .actions a {
+            text-decoration: none;
+            color: white;
+            background-color: #28a745;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        .actions a.delete {
+            background-color: #dc3545;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Vertragsmanager</h1>
-        <a href="add_contract.php">+ Vertrag hinzufügen</a>
+    <h1>Vertragsübersicht</h1>
+    
+    <!-- Filteroptionen -->
+    <div class="filter">
+        <a href="?filter=all" class="<?= $filter === 'all' ? 'active' : '' ?>">Alle</a>
+        <a href="?filter=active" class="<?= $filter === 'active' ? 'active' : '' ?>">Aktive</a>
+        <a href="?filter=expiring" class="<?= $filter === 'expiring' ? 'active' : '' ?>">Laufende</a>
+        <a href="?filter=canceled" class="<?= $filter === 'canceled' ? 'active' : '' ?>">Gekündigte</a>
     </div>
-
+    
+    <!-- Vertragskacheln -->
     <div class="container">
-        <h1 class="text-center">Vertragsübersicht</h1>
+        <?php if (count($contracts) > 0): ?>
+            <?php foreach ($contracts as $contract): ?>
+                <div class="contract-card">
+                    <!-- Icon anzeigen -->
+                    <?php if (!empty($contract['icon_path'])): ?>
+                        <img src="<?= htmlspecialchars($contract['icon_path']) ?>" alt="Icon">
+                    <?php else: ?>
+                        <img src="/var/www/html/default-icon.png" alt="Standard-Icon">
+                    <?php endif; ?>
 
-        <!-- Kacheln -->
-        <div class="card-container">
-            <div class="card">
-                <a href="index.php?filter=active" class="filter-button blue">
-                    <span><?= getContractsCount($db, "canceled = 0 AND (end_date IS NULL OR end_date > date('now'))"); ?> Aktive Verträge</span>
-                </a>
-                <a href="index.php?filter=longterm" class="filter-button green">
-                    <span><?= getContractsCount($db, "duration >= 12"); ?> Langzeitverträge</span>
-                </a>
-                <a href="index.php?filter=monthly" class="filter-button orange">
-                    <span><?= getContractsCount($db, "duration = 1"); ?> Monatsverträge</span>
-                </a>
-                <a href="index.php?filter=expiring" class="filter-button red">
-                    <span><?= getContractsCount($db, "canceled = 0 AND end_date BETWEEN date('now') AND date('now', '+30 days') AND cancellation_date < date('now', '+30 days')"); ?> Ablaufende Verträge</span>
-                </a>
-            </div>
-            <div class="card">
-                <h5>Gesamtkosten</h5>
-                <p><?= number_format($db->querySingle("SELECT SUM(cost) FROM contracts WHERE canceled = 0"), 2, ',', '.'); ?> €</p>
-            </div>
-        </div>
+                    <!-- Vertragsdetails -->
+                    <h2><?= htmlspecialchars($contract['name']) ?></h2>
+                    <p><strong>Anbieter:</strong> <?= htmlspecialchars($contract['provider']) ?></p>
+                    <p><strong>Kosten:</strong> <?= number_format($contract['cost'], 2) ?> €</p>
+                    <p><strong>Startdatum:</strong> <?= htmlspecialchars($contract['start_date']) ?></p>
+                    <p><strong>Enddatum:</strong> <?= htmlspecialchars($contract['end_date']) ?></p>
 
-        <!-- Suchleiste -->
-        <div class="search-bar">
-            <form method="GET" action="">
-                <input type="hidden" name="filter" value="<?= htmlspecialchars($filter); ?>">
-                <div class="input-group">
-                    <input type="text" class="form-control" name="search" placeholder="Nach Vertrag oder Anbieter suchen..." value="<?= htmlspecialchars($search); ?>">
-                    <button class="btn btn-primary" type="submit">Suchen</button>
+                    <!-- PDF-Link anzeigen -->
+                    <?php if (!empty($contract['pdf_path'])): ?>
+                        <a href="<?= htmlspecialchars($contract['pdf_path']) ?>" target="_blank">PDF anzeigen</a>
+                    <?php endif; ?>
+
+                    <!-- Aktionen -->
+                    <div class="actions">
+                        <a href="edit_contract.php?id=<?= $contract['id'] ?>">Bearbeiten</a>
+                        <a href="delete_contract.php?id=<?= $contract['id'] ?>" class="delete">Löschen</a>
+                    </div>
                 </div>
-            </form>
-        </div>
-
-        <!-- Vertragskarten -->
-        <div class="card-container">
-            <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
-                <div class="contract-card <?= getCardClass($row); ?>">
-                    <h5><?= htmlspecialchars($row['name']); ?></h5>
-                    <p class="provider"><?= htmlspecialchars($row['provider']); ?></p>
-                    <p class="cost"><?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
-                    <p class="dates">
-                        Start: <?= htmlspecialchars($row['start_date']); ?><br>
-                        Ende: <?= htmlspecialchars($row['end_date']); ?>
-                    </p>
-                    <p class="dates">Kündigungsfrist: <?= htmlspecialchars($row['cancellation_date']); ?></p>
-                </div>
-            <?php endwhile; ?>
-        </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <p class="no-contracts">Keine Verträge vorhanden.</p>
+        <?php endif; ?>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

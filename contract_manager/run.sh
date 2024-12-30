@@ -20,7 +20,31 @@ else
   echo "Datenbank existiert bereits: $DB_FILE"
 fi
 
-# 2) Web-Verzeichnis prüfen
+# 2) Icon-Verzeichnis prüfen und erstellen
+ICON_DIR="/data/icons"
+if [ ! -d "$ICON_DIR" ]; then
+  echo "Icon-Verzeichnis wird erstellt: $ICON_DIR"
+  mkdir -p "$ICON_DIR" || {
+    echo "Fehler beim Erstellen des Icon-Verzeichnisses $ICON_DIR!"
+    exit 1
+  }
+else
+  echo "Icon-Verzeichnis existiert bereits: $ICON_DIR"
+fi
+
+# 3) PDF-Verzeichnis prüfen und erstellen
+PDF_DIR="/data/pdfs"
+if [ ! -d "$PDF_DIR" ]; then
+  echo "PDF-Verzeichnis wird erstellt: $PDF_DIR"
+  mkdir -p "$PDF_DIR" || {
+    echo "Fehler beim Erstellen des PDF-Verzeichnisses $PDF_DIR!"
+    exit 1
+  }
+else
+  echo "PDF-Verzeichnis existiert bereits: $PDF_DIR"
+fi
+
+# 4) Web-Verzeichnis prüfen
 WEB_DIR="/var/www/html"
 if [ ! -d "$WEB_DIR" ]; then
   echo "Verzeichnis $WEB_DIR existiert nicht! Erstelle es ..."
@@ -35,14 +59,14 @@ if [ ! -f "$WEB_DIR/index.php" ]; then
   exit 1
 fi
 
-# 3) Ingress-Port abfragen (Bashio)
+# 5) Ingress-Port abfragen (Bashio)
 PORT=$(bashio::addon.ingress_port 2>/dev/null || true)
 if [ -z "$PORT" ] || [ "$PORT" = "null" ]; then
   echo "Kein Ingress-Port gefunden, Standardport wird verwendet: 80"
   PORT=80
 fi
 
-# 4) Lighttpd-Port anpassen
+# 6) Lighttpd-Port anpassen
 if [ -f /etc/lighttpd/lighttpd.conf ]; then
   # Prüfen, ob server.port existiert, und entsprechend hinzufügen oder ersetzen
   if ! grep -q "server.port" /etc/lighttpd/lighttpd.conf; then
@@ -70,7 +94,7 @@ lighttpd -t -f /etc/lighttpd/lighttpd.conf || {
   exit 1
 }
 
-# 5) Lighttpd starten
+# 7) Lighttpd starten
 echo "Starte Lighttpd-Webserver auf Port ${PORT}..."
 lighttpd -D -f /etc/lighttpd/lighttpd.conf || { 
   echo "Fehler beim Start von Lighttpd!"
