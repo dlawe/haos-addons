@@ -11,32 +11,32 @@
             font-family: Arial, sans-serif;
         }
         h1 {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 600;
             color: #2c3e50;
             margin-bottom: 20px;
         }
         .form-container {
-            max-width: 600px;
+            max-width: 500px;
             margin: 0 auto;
             background: white;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .form-label {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: #555;
         }
         .form-control {
-            font-size: 0.9rem;
-            padding: 8px;
+            font-size: 0.85rem;
+            padding: 6px;
             border: 1px solid #ccc;
             border-radius: 4px;
         }
         .btn {
-            font-size: 0.9rem;
-            padding: 10px 15px;
+            font-size: 0.85rem;
+            padding: 8px 12px;
             border-radius: 4px;
         }
         .btn-success {
@@ -55,17 +55,34 @@
         }
         @media (max-width: 768px) {
             .form-container {
-                padding: 15px;
+                padding: 10px;
             }
             h1 {
-                font-size: 1.2rem;
+                font-size: 1.1rem;
             }
             .btn {
-                font-size: 0.85rem;
-                padding: 8px 12px;
+                font-size: 0.8rem;
+                padding: 6px 10px;
             }
         }
     </style>
+    <script>
+        // Automatische Berechnung der Laufzeit
+        function calculateDuration() {
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+            const durationField = document.getElementById('duration');
+
+            if (startDate && endDate) {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+                durationField.value = months > 0 ? months : 0; // Laufzeit in Monaten
+            } else {
+                durationField.value = ''; // Keine Laufzeit berechnen
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="container">
@@ -81,12 +98,12 @@
             <!-- Formular für neuen Vertrag -->
             <form method="POST" action="">
                 <div class="mb-3">
-                    <label for="name" class="form-label">Name des Vertrags</label>
-                    <input type="text" class="form-control" id="name" name="name" required>
-                </div>
-                <div class="mb-3">
                     <label for="provider" class="form-label">Anbieter</label>
                     <input type="text" class="form-control" id="provider" name="provider" required>
+                </div>
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name des Vertrags</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
                 </div>
                 <div class="mb-3">
                     <label for="cost" class="form-label">Kosten (€)</label>
@@ -94,39 +111,23 @@
                 </div>
                 <div class="mb-3">
                     <label for="start_date" class="form-label">Startdatum</label>
-                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                    <input type="date" class="form-control" id="start_date" name="start_date" required onchange="calculateDuration()">
                 </div>
                 <div class="mb-3">
                     <label for="end_date" class="form-label">Enddatum</label>
-                    <input type="date" class="form-control" id="end_date" name="end_date" required>
+                    <input type="date" class="form-control" id="end_date" name="end_date" required onchange="calculateDuration()">
                 </div>
                 <div class="mb-3">
                     <label for="duration" class="form-label">Laufzeit (in Monaten)</label>
-                    <input type="number" class="form-control" id="duration" name="duration" required>
+                    <input type="number" class="form-control" id="duration" name="duration" readonly>
                 </div>
                 <div class="mb-3">
                     <label for="cancellation_period" class="form-label">Kündigungsfrist (in Monaten)</label>
                     <input type="number" class="form-control" id="cancellation_period" name="cancellation_period" required>
                 </div>
                 <div class="mb-3">
-                    <label for="category_id" class="form-label">Kategorie</label>
-                    <select class="form-control" id="category_id" name="category_id">
-                        <option value="">Bitte wählen oder eingeben</option>
-                        <?php while ($row = $categories->fetchArray(SQLITE3_ASSOC)): ?>
-                            <option value="<?= $row['id']; ?>"><?= htmlspecialchars($row['category_name']); ?></option>
-                        <?php endwhile; ?>
-                    </select>
-                    <input type="text" class="form-control mt-2" id="category_name" name="category_name" placeholder="Neue Kategorie hinzufügen">
-                </div>
-                <div class="mb-3">
-                    <label for="contract_type_id" class="form-label">Vertragstyp</label>
-                    <select class="form-control" id="contract_type_id" name="contract_type_id">
-                        <option value="">Bitte wählen oder eingeben</option>
-                        <?php while ($row = $contractTypes->fetchArray(SQLITE3_ASSOC)): ?>
-                            <option value="<?= $row['id']; ?>"><?= htmlspecialchars($row['type_name']); ?></option>
-                        <?php endwhile; ?>
-                    </select>
-                    <input type="text" class="form-control mt-2" id="contract_type_name" name="contract_type_name" placeholder="Neuen Vertragstyp hinzufügen">
+                    <label for="category" class="form-label">Kategorie</label>
+                    <input type="text" class="form-control" id="category" name="category" required>
                 </div>
                 <div class="d-flex justify-content-between">
                     <button type="submit" class="btn btn-success">Vertrag speichern</button>
