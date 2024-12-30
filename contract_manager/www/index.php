@@ -61,12 +61,19 @@ function getMonthlyCost($db) {
             margin-bottom: 20px;
             color: #333;
         }
+        .card-container {
+            display: flex;
+            flex-wrap: nowrap; /* Keine Zeilenumbruch, auch auf Mobilgeräten */
+            gap: 10px; /* Abstand zwischen den Kacheln */
+            overflow-x: auto; /* Horizontal scrollen bei zu kleinen Bildschirmen */
+        }
         .card {
             border-radius: 8px;
             padding: 10px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 15px;
             background-color: white;
+            flex: 0 0 48%; /* Zwei Kacheln pro Zeile */
+            max-width: 48%; /* Breite begrenzen */
         }
         .card .section {
             display: flex;
@@ -81,12 +88,12 @@ function getMonthlyCost($db) {
             flex-shrink: 0;
         }
         .stats {
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: bold;
             margin-right: 5px;
         }
         .description {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #555;
         }
         .green {
@@ -101,10 +108,9 @@ function getMonthlyCost($db) {
         .blue {
             background-color: #007bff;
         }
-        @media (min-width: 768px) {
-            .row-cols-2 > * {
-                flex: 0 0 50%;
-                max-width: 50%;
+        @media (max-width: 576px) {
+            .card {
+                flex: 0 0 45%; /* Auf Mobilgeräten etwas schmalere Kacheln */
             }
         }
     </style>
@@ -112,45 +118,41 @@ function getMonthlyCost($db) {
 <body>
     <div class="container">
         <h1 class="text-center">Vertragsübersicht</h1>
-        <div class="row row-cols-1 row-cols-md-2">
+        <div class="card-container">
             <!-- Erste Kachel -->
-            <div class="col">
-                <div class="card">
-                    <div class="section">
-                        <div class="section-icon blue"></div>
-                        <span class="stats"><?= getActiveContractsCount($db); ?></span>
-                        <span class="description">Aktive Verträge</span>
-                    </div>
-                    <div class="section">
-                        <div class="section-icon green"></div>
-                        <span class="stats"><?= getLongTermContractsCount($db); ?></span>
-                        <span class="description">Langzeitverträge</span>
-                    </div>
-                    <div class="section">
-                        <div class="section-icon orange"></div>
-                        <span class="stats"><?= getMonthlyContractsCount($db); ?></span>
-                        <span class="description">Monatsverträge</span>
-                    </div>
-                    <div class="section">
-                        <div class="section-icon red"></div>
-                        <span class="stats"><?= getExpiringContractsCount($db); ?></span>
-                        <span class="description">Ablaufende Verträge</span>
-                    </div>
+            <div class="card">
+                <div class="section">
+                    <div class="section-icon blue"></div>
+                    <span class="stats"><?= getActiveContractsCount($db); ?></span>
+                    <span class="description">Aktive Verträge</span>
+                </div>
+                <div class="section">
+                    <div class="section-icon green"></div>
+                    <span class="stats"><?= getLongTermContractsCount($db); ?></span>
+                    <span class="description">Langzeitverträge</span>
+                </div>
+                <div class="section">
+                    <div class="section-icon orange"></div>
+                    <span class="stats"><?= getMonthlyContractsCount($db); ?></span>
+                    <span class="description">Monatsverträge</span>
+                </div>
+                <div class="section">
+                    <div class="section-icon red"></div>
+                    <span class="stats"><?= getExpiringContractsCount($db); ?></span>
+                    <span class="description">Ablaufende Verträge</span>
                 </div>
             </div>
             <!-- Zweite Kachel -->
-            <div class="col">
-                <div class="card">
-                    <div class="section">
-                        <div class="section-icon blue"></div>
-                        <span class="stats">
-                            <?php
-                            $monthlyCost = getMonthlyCost($db);
-                            echo $monthlyCost !== null ? number_format($monthlyCost, 2, ',', '.') . ' €' : '0,00 €';
-                            ?>
-                        </span>
-                        <span class="description">Gesamtkosten pro Monat</span>
-                    </div>
+            <div class="card">
+                <div class="section">
+                    <div class="section-icon blue"></div>
+                    <span class="stats">
+                        <?php
+                        $monthlyCost = getMonthlyCost($db);
+                        echo $monthlyCost !== null ? number_format($monthlyCost, 2, ',', '.') . ' €' : '0,00 €';
+                        ?>
+                    </span>
+                    <span class="description">Gesamtkosten pro Monat</span>
                 </div>
             </div>
         </div>
