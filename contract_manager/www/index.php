@@ -56,6 +56,7 @@ $contracts = getContracts($db, $condition, $search);
         .card-container {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
         .card {
             border-radius: 8px;
@@ -63,15 +64,7 @@ $contracts = getContracts($db, $condition, $search);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             background-color: white;
             flex: 1;
-        }
-        .search-bar {
-            margin: 20px 0;
-        }
-        .table-container {
-            margin-top: 20px;
-        }
-        .table {
-            font-size: 0.9rem;
+            max-width: 250px;
         }
         .filter-button {
             display: flex;
@@ -84,6 +77,7 @@ $contracts = getContracts($db, $condition, $search);
             cursor: pointer;
             text-decoration: none;
             font-weight: bold;
+            margin-bottom: 10px;
         }
         .blue {
             background-color: #007bff;
@@ -97,6 +91,15 @@ $contracts = getContracts($db, $condition, $search);
         .red {
             background-color: #dc3545;
         }
+        .search-bar {
+            margin: 20px 0;
+        }
+        .table-container {
+            margin-top: 20px;
+        }
+        .table {
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -106,13 +109,18 @@ $contracts = getContracts($db, $condition, $search);
         <!-- Kacheln -->
         <div class="card-container">
             <div class="card">
-                <h5>Statistiken</h5>
                 <a href="index.php?filter=active" class="filter-button blue">
                     <span><?= getContractsCount($db, "canceled = 0 AND (end_date IS NULL OR end_date > date('now'))"); ?> Aktive Verträge</span>
                 </a>
-                <p><?= getContractsCount($db, "duration >= 12"); ?> Langzeitverträge</p>
-                <p><?= getContractsCount($db, "duration = 1"); ?> Monatsverträge</p>
-                <p><?= getContractsCount($db, "canceled = 0 AND end_date BETWEEN date('now') AND date('now', '+30 days') AND cancellation_date < date('now', '+30 days')"); ?> Ablaufende Verträge</p>
+                <a href="index.php?filter=longterm" class="filter-button green">
+                    <span><?= getContractsCount($db, "duration >= 12"); ?> Langzeitverträge</span>
+                </a>
+                <a href="index.php?filter=monthly" class="filter-button orange">
+                    <span><?= getContractsCount($db, "duration = 1"); ?> Monatsverträge</span>
+                </a>
+                <a href="index.php?filter=expiring" class="filter-button red">
+                    <span><?= getContractsCount($db, "canceled = 0 AND end_date BETWEEN date('now') AND date('now', '+30 days') AND cancellation_date < date('now', '+30 days')"); ?> Ablaufende Verträge</span>
+                </a>
             </div>
             <div class="card">
                 <h5>Gesamtkosten</h5>
