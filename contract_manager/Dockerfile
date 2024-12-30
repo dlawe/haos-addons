@@ -20,10 +20,16 @@ RUN apk add --no-cache \
     lighttpd \
     bash
 
+# PHP-Konfigurationsanpassungen
+RUN php_ini_path=$(php --ini | grep "Loaded Configuration File" | awk '{print $4}') && \
+    echo "upload_max_filesize = 10M" >> $php_ini_path && \
+    echo "post_max_size = 10M" >> $php_ini_path && \
+    echo "memory_limit = 128M" >> $php_ini_path
+
 # Arbeitsverzeichnis setzen
 WORKDIR /app
 
-# Kopieren der Skripte und Dateien
+# Skripte und Dateien kopieren
 COPY run.sh /run.sh
 COPY init_db.py /app/init_db.py
 COPY www /var/www/html
@@ -43,11 +49,6 @@ RUN mkdir -p /etc/lighttpd && \
     echo 'server.errorlog = "/dev/stderr"' >> /etc/lighttpd/lighttpd.conf && \
     echo 'server.bind = "0.0.0.0"' >> /etc/lighttpd/lighttpd.conf && \
     echo 'accesslog.filename = "/dev/stdout"' >> /etc/lighttpd/lighttpd.conf
-
-# PHP-Upload-Limits anpassen
-RUN echo 'upload_max_filesize = 10M' >> /usr/local/etc/php/php.ini && \
-    echo 'post_max_size = 10M' >> /usr/local/etc/php/php.ini && \
-    echo 'memory_limit = 128M' >> /usr/local/etc/php/php.ini
 
 # Überprüfung der Lighttpd-Konfiguration hinzufügen
 RUN lighttpd -t -f /etc/lighttpd/lighttpd.conf
