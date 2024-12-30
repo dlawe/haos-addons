@@ -153,10 +153,7 @@ $contracts = getContracts($db, $condition, $search);
         <h1>Vertragsmanager</h1>
         <a href="add_contract.php">+ Vertrag hinzufügen</a>
     </div>
-
-    <div class="container">
-        <h1 class="text-center">Vertragsübersicht</h1>
-
+	
         <!-- Kacheln -->
         <div class="card-container">
             <div class="card">
