@@ -56,28 +56,38 @@ function getMonthlyCost($db) {
             font-family: Arial, sans-serif;
         }
         h1 {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: bold;
             margin-bottom: 20px;
             color: #333;
         }
         .card {
-            border-radius: 16px;
-            padding: 15px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
             background-color: white;
         }
         .card .section {
-            margin-bottom: 15px;
             display: flex;
             align-items: center;
+            margin-bottom: 8px;
         }
         .section-icon {
-            width: 20px;
-            height: 20px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             margin-right: 10px;
+            flex-shrink: 0;
+        }
+        .stats {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .description {
+            font-size: 0.85rem;
+            color: #555;
         }
         .green {
             background-color: #28a745;
@@ -90,15 +100,6 @@ function getMonthlyCost($db) {
         }
         .blue {
             background-color: #007bff;
-        }
-        .stats {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .description {
-            font-size: 0.9rem;
-            color: #555;
         }
         @media (min-width: 768px) {
             .row-cols-2 > * {
@@ -117,31 +118,23 @@ function getMonthlyCost($db) {
                 <div class="card">
                     <div class="section">
                         <div class="section-icon blue"></div>
-                        <div>
-                            <p class="stats"><?= getActiveContractsCount($db); ?></p>
-                            <p class="description">Aktuell aktive Verträge</p>
-                        </div>
+                        <span class="stats"><?= getActiveContractsCount($db); ?></span>
+                        <span class="description">Aktive Verträge</span>
                     </div>
                     <div class="section">
                         <div class="section-icon green"></div>
-                        <div>
-                            <p class="stats"><?= getLongTermContractsCount($db); ?></p>
-                            <p class="description">Langzeitverträge</p>
-                        </div>
+                        <span class="stats"><?= getLongTermContractsCount($db); ?></span>
+                        <span class="description">Langzeitverträge</span>
                     </div>
                     <div class="section">
                         <div class="section-icon orange"></div>
-                        <div>
-                            <p class="stats"><?= getMonthlyContractsCount($db); ?></p>
-                            <p class="description">Monatsverträge</p>
-                        </div>
+                        <span class="stats"><?= getMonthlyContractsCount($db); ?></span>
+                        <span class="description">Monatsverträge</span>
                     </div>
                     <div class="section">
                         <div class="section-icon red"></div>
-                        <div>
-                            <p class="stats"><?= getExpiringContractsCount($db); ?></p>
-                            <p class="description">Ablaufende Verträge</p>
-                        </div>
+                        <span class="stats"><?= getExpiringContractsCount($db); ?></span>
+                        <span class="description">Ablaufende Verträge</span>
                     </div>
                 </div>
             </div>
@@ -150,15 +143,13 @@ function getMonthlyCost($db) {
                 <div class="card">
                     <div class="section">
                         <div class="section-icon blue"></div>
-                        <div>
-                            <p class="stats">
-                                <?php
-                                $monthlyCost = getMonthlyCost($db);
-                                echo $monthlyCost !== null ? number_format($monthlyCost, 2, ',', '.') . ' €' : '0,00 €';
-                                ?>
-                            </p>
-                            <p class="description">Gesamtkosten pro Monat</p>
-                        </div>
+                        <span class="stats">
+                            <?php
+                            $monthlyCost = getMonthlyCost($db);
+                            echo $monthlyCost !== null ? number_format($monthlyCost, 2, ',', '.') . ' €' : '0,00 €';
+                            ?>
+                        </span>
+                        <span class="description">Gesamtkosten pro Monat</span>
                     </div>
                 </div>
             </div>
