@@ -1,65 +1,3 @@
-<?php
-// Verbindung zur SQLite-Datenbank herstellen
-$db = new SQLite3('/data/contracts.db');
-
-// Funktionen für die Statistiken
-function getActiveContractsCount($db) {
-    return $db->querySingle("
-        SELECT COUNT(*) 
-        FROM contracts 
-        WHERE canceled = 0 AND (end_date IS NULL OR end_date > date('now'))
-    ");
-}
-
-function getLongTermContractsCount($db) {
-    return $db->querySingle("
-        SELECT COUNT(*) 
-        FROM contracts 
-        WHERE duration >= 12
-    ");
-}
-
-function getMonthlyContractsCount($db) {
-    return $db->querySingle("
-        SELECT COUNT(*) 
-        FROM contracts 
-        WHERE duration = 1
-    ");
-}
-
-function getExpiringContractsCount($db) {
-    return $db->querySingle("
-        SELECT COUNT(*) 
-        FROM contracts 
-        WHERE canceled = 0 
-        AND end_date BETWEEN date('now') AND date('now', '+30 days') 
-        AND cancellation_date < date('now', '+30 days')
-    ");
-}
-
-// Filter aus der URL verarbeiten
-$filter = $_GET['filter'] ?? 'all';
-$search = $_GET['search'] ?? '';
-
-$query = "SELECT * FROM contracts";
-if ($filter === 'active') {
-    $query .= " WHERE canceled = 0 AND (end_date IS NULL OR end_date > date('now'))";
-} elseif ($filter === 'longterm') {
-    $query .= " WHERE duration >= 12";
-} elseif ($filter === 'monthly') {
-    $query .= " WHERE duration = 1";
-} elseif ($filter === 'expiring') {
-    $query .= " WHERE canceled = 0 
-                AND end_date BETWEEN date('now') AND date('now', '+30 days') 
-                AND cancellation_date < date('now', '+30 days')";
-}
-if (!empty($search)) {
-    $query .= ($filter !== 'all' ? " AND" : " WHERE") . " (name LIKE '%$search%' OR provider LIKE '%$search%')";
-}
-
-$contracts = $db->query($query);
-?>
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -70,150 +8,116 @@ $contracts = $db->query($query);
     <style>
         body {
             background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
         }
-        .header {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
+        h1 {
+            font-size: 1.5rem;
+            font-weight: bold;
             margin-bottom: 20px;
-        }
-        .header input {
-            flex: 1;
-            min-width: 200px;
-        }
-        .header .btn {
-            white-space: nowrap;
+            color: #333;
         }
         .card {
-            margin: 10px;
-            height: 150px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-radius: 16px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            background-color: white;
         }
-        .card:hover {
-            transform: scale(1.05);
-            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+        .card .section {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
         }
-        .card-title {
-            font-size: 1rem;
+        .section-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .green {
+            background-color: #28a745;
+        }
+        .orange {
+            background-color: #ffc107;
+        }
+        .red {
+            background-color: #dc3545;
+        }
+        .blue {
+            background-color: #007bff;
+        }
+        .stats {
+            font-size: 1.2rem;
             font-weight: bold;
+            margin-bottom: 5px;
         }
-        .card-text {
-            font-size: 1.5rem;
-        }
-        .table-container {
-            margin-top: 20px;
-            overflow-x: auto; /* Scrollbare Tabelle */
-        }
-        .table {
+        .description {
             font-size: 0.9rem;
-            border-collapse: collapse;
-            min-width: 800px; /* Mindestbreite */
+            color: #555;
         }
-        .table th {
-            position: sticky;
-            top: 0;
-            background-color: #fff;
-            z-index: 2;
-        }
-        .table th, .table td {
-            text-align: center;
-            padding: 10px;
-        }
-        .table-hover tbody tr:hover {
-            background-color: #f1f1f1;
+        @media (min-width: 768px) {
+            .row-cols-2 > * {
+                flex: 0 0 50%;
+                max-width: 50%;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center my-4">Vertragsübersicht</h1>
-
-        <!-- Header: Suchleiste und Button -->
-        <div class="header">
-            <form class="d-flex flex-grow-1" method="GET" action="">
-                <input type="text" class="form-control" name="search" placeholder="Nach Name oder Anbieter suchen..." value="<?= htmlspecialchars($search); ?>">
-            </form>
-            <a href="add_contract.php" class="btn btn-primary px-4 py-2">Neuen Vertrag hinzufügen</a>
-        </div>
-
-        <!-- Übersicht der Statistiken -->
-        <div class="row row-cols-1 row-cols-md-4 gx-3 gy-3">
+        <h1 class="text-center">Vertragsübersicht</h1>
+        <div class="row row-cols-1 row-cols-md-2">
+            <!-- Erste Kachel -->
             <div class="col">
-                <a href="index.php?filter=active" class="text-decoration-none">
-                    <div class="card text-white bg-primary">
-                        <div class="card-body">
-                            <h5 class="card-title text-center">Aktive Verträge</h5>
-                            <p class="card-text text-center"><?= getActiveContractsCount($db); ?></p>
+                <div class="card">
+                    <div class="section">
+                        <div class="section-icon blue"></div>
+                        <div>
+                            <p class="stats"><?= getActiveContractsCount($db); ?></p>
+                            <p class="description">Aktuell aktive Verträge</p>
                         </div>
                     </div>
-                </a>
-            </div>
-            <div class="col">
-                <a href="index.php?filter=longterm" class="text-decoration-none">
-                    <div class="card text-white bg-success">
-                        <div class="card-body">
-                            <h5 class="card-title text-center">Langzeitverträge</h5>
-                            <p class="card-text text-center"><?= getLongTermContractsCount($db); ?></p>
+                    <div class="section">
+                        <div class="section-icon green"></div>
+                        <div>
+                            <p class="stats"><?= getLongTermContractsCount($db); ?></p>
+                            <p class="description">Langzeitverträge</p>
                         </div>
                     </div>
-                </a>
-            </div>
-            <div class="col">
-                <a href="index.php?filter=monthly" class="text-decoration-none">
-                    <div class="card text-white bg-warning">
-                        <div class="card-body">
-                            <h5 class="card-title text-center">Monatsverträge</h5>
-                            <p class="card-text text-center"><?= getMonthlyContractsCount($db); ?></p>
+                    <div class="section">
+                        <div class="section-icon orange"></div>
+                        <div>
+                            <p class="stats"><?= getMonthlyContractsCount($db); ?></p>
+                            <p class="description">Monatsverträge</p>
                         </div>
                     </div>
-                </a>
-            </div>
-            <div class="col">
-                <a href="index.php?filter=expiring" class="text-decoration-none">
-                    <div class="card text-white bg-danger">
-                        <div class="card-body">
-                            <h5 class="card-title text-center">Ablaufende Verträge</h5>
-                            <p class="card-text text-center"><?= getExpiringContractsCount($db); ?></p>
+                    <div class="section">
+                        <div class="section-icon red"></div>
+                        <div>
+                            <p class="stats"><?= getExpiringContractsCount($db); ?></p>
+                            <p class="description">Ablaufende Verträge</p>
                         </div>
                     </div>
-                </a>
+                </div>
             </div>
-        </div>
-
-        <!-- Tabelle mit den Verträgen -->
-        <div class="table-container">
-            <h2>Verträge anzeigen</h2>
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Name</th>
-                        <th>Anbieter</th>
-                        <th>Kosten</th>
-                        <th>Startdatum</th>
-                        <th>Enddatum</th>
-                        <th>Kündigungsfrist</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
-                        <tr>
-                            <td><?= htmlspecialchars($row['id']); ?></td>
-                            <td><?= htmlspecialchars($row['name']); ?></td>
-                            <td><?= htmlspecialchars($row['provider']); ?></td>
-                            <td><?= number_format($row['cost'], 2, ',', '.'); ?> €</td>
-                            <td><?= htmlspecialchars($row['start_date']); ?></td>
-                            <td><?= htmlspecialchars($row['end_date']); ?></td>
-                            <td><?= htmlspecialchars($row['cancellation_date']); ?></td>
-                        </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
+            <!-- Zweite Kachel -->
+            <div class="col">
+                <div class="card">
+                    <div class="section">
+                        <div class="section-icon blue"></div>
+                        <div>
+                            <p class="stats">
+                                <?php
+                                $monthlyCost = $db->querySingle("SELECT SUM(cost) FROM contracts WHERE canceled = 0");
+                                echo number_format($monthlyCost, 2, ',', '.'); ?> €
+                            </p>
+                            <p class="description">Gesamtkosten pro Monat</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
