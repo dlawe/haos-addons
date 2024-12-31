@@ -119,6 +119,14 @@ $contracts = getContracts($db, $condition, $search);
             height: 40px;
             object-fit: cover;
         }
+        .contract-card img.pdf-icon {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
         .border-red {
             border-left-color: #dc3545;
         }
@@ -168,11 +176,20 @@ $contracts = getContracts($db, $condition, $search);
 
                     <h5><?= htmlspecialchars($row['name']); ?></h5>
                     <p class="provider"><?= htmlspecialchars($row['provider']); ?></p>
-                    <p class="cost"><?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
+                    <p class="cost">
+                        <?= number_format($row['cost'], 2, ',', '.'); ?> €
+                    </p>
                     <p class="dates">
                         Start: <?= htmlspecialchars($row['start_date']); ?><br>
                         Ende: <?= htmlspecialchars($row['end_date']); ?>
                     </p>
+
+                    <!-- PDF Icon unten rechts -->
+                    <?php if (!empty($row['pdf_path'])): ?>
+                        <a href="<?= htmlspecialchars($row['pdf_path']); ?>" target="_blank">
+                            <img src="pdf-icon.png" alt="PDF öffnen" class="pdf-icon">
+                        </a>
+                    <?php endif; ?>
                 </div>
             <?php endwhile; ?>
         </div>
