@@ -20,10 +20,6 @@ RUN apk add --no-cache \
     lighttpd \
     bash
 
-RUN if ! id -u www-data >/dev/null 2>&1; then \
-    addgroup -g 82 -S www-data && \
-    adduser -u 82 -D -S -G www-data www-data; \
-fi
 
 
 # PHP-Konfigurationsanpassungen
@@ -62,10 +58,7 @@ RUN mkdir -p /etc/lighttpd && \
 RUN lighttpd -t -f /etc/lighttpd/lighttpd.conf
 
 # Sicherstellen, dass Verzeichnisse vorhanden sind
-RUN mkdir -p /data/icons /data/pdfs && \
-    chmod -R 755 /data && \
-    chown -R www-data:www-data /data
-
+RUN mkdir -p /data/icons /data/pdfs && 
 
 # Datenbankvolumen deklarieren
 VOLUME ["/data"]
