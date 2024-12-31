@@ -56,7 +56,10 @@ RUN mkdir -p /etc/lighttpd && \
 RUN lighttpd -t -f /etc/lighttpd/lighttpd.conf
 
 # Sicherstellen, dass Verzeichnisse vorhanden sind
-RUN mkdir -p /data/icons /data/pdfs 
+RUN mkdir -p /data/icons /data/pdfs && \
+    chmod -R 755 /data && \
+    chown -R www-data:www-data /data
+
 
 # Datenbankvolumen deklarieren
 VOLUME ["/data"]
