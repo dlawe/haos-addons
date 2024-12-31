@@ -117,7 +117,9 @@ $contracts = getContracts($db, $condition, $search);
             right: 10px;
             width: 40px;
             height: 40px;
-            object-fit: cover;
+            object-fit: contain; /* Verhindert Verzerrung */
+            max-width: 100%;
+            max-height: 100%;
         }
         .contract-card img.pdf-icon {
             position: absolute;
