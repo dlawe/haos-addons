@@ -46,6 +46,7 @@ RUN mkdir -p /etc/lighttpd && \
     echo 'fastcgi.server = ( ".php" => (( "bin-path" => "/usr/bin/php-cgi", "socket" => "/tmp/php.socket" )))' >> /etc/lighttpd/lighttpd.conf && \
     echo 'server.indexfiles = ( "index.php", "index.html", "index.htm" )' >> /etc/lighttpd/lighttpd.conf && \
     echo 'server.document-root = "/var/www/html"' >> /etc/lighttpd/lighttpd.conf && \
+    echo 'alias.url += ( "/icons/" => "/data/icons/", "/pdfs/" => "/data/pdfs/" )' >> /etc/lighttpd/lighttpd.conf && \
     echo 'server.errorlog = "/dev/stderr"' >> /etc/lighttpd/lighttpd.conf && \
     echo 'server.bind = "0.0.0.0"' >> /etc/lighttpd/lighttpd.conf && \
     echo 'accesslog.filename = "/dev/stdout"' >> /etc/lighttpd/lighttpd.conf
