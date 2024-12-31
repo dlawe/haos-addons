@@ -136,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $duration, $cancellation_period, $category_id, $contract_type_id, $icon_path, $pdf_path
         ]);
 
-        echo "Vertrag erfolgreich hinzugefügt!";
+        echo "<p style='color:green;'>Vertrag erfolgreich hinzugefügt!</p>";
     } else {
         // Fehler ausgeben
         foreach ($errors as $error) {
@@ -153,53 +153,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vertrag hinzufügen</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
 <body>
-    <h1>Neuen Vertrag hinzufügen</h1>
-    <form action="add_contract.php" method="post" enctype="multipart/form-data">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required><br>
-
-        <label for="provider">Anbieter:</label>
-        <input type="text" id="provider" name="provider" required><br>
-
-        <label for="cost">Kosten:</label>
-        <input type="number" step="0.01" id="cost" name="cost" required><br>
-
-        <label for="start_date">Startdatum:</label>
-        <input type="date" id="start_date" name="start_date"><br>
-
-        <label for="end_date">Enddatum:</label>
-        <input type="date" id="end_date" name="end_date"><br>
-
-        <label for="cancellation_date">Kündigungsdatum:</label>
-        <input type="date" id="cancellation_date" name="cancellation_date"><br>
-
-        <label for="cancellation_period">Kündigungsfrist (Monate):</label>
-        <input type="number" id="cancellation_period" name="cancellation_period"><br>
-
-        <label for="duration">Laufzeit (Monate):</label>
-        <input type="number" id="duration" name="duration"><br>
-
-        <label for="category_id">Kategorie:</label>
-        <select id="category_id" name="category_id">
-            <option value="1">Kategorie 1</option>
-            <option value="2">Kategorie 2</option>
-        </select><br>
-
-        <label for="contract_type_id">Vertragstyp:</label>
-        <select id="contract_type_id" name="contract_type_id">
-            <option value="1">Typ 1</option>
-            <option value="2">Typ 2</option>
-        </select><br>
-
-        <label for="icon">Icon hochladen:</label>
-        <input type="file" id="icon" name="icon" accept="image/*"><br>
-
-        <label for="pdf">PDF hochladen:</label>
-        <input type="file" id="pdf" name="pdf" accept="application/pdf"><br>
-
-        <button type="submit">Vertrag hinzufügen</button>
-    </form>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Neuen Vertrag hinzufügen</h1>
+        <form action="add_contract.php" method="post" enctype="multipart/form-data" class="row g-3">
+            <div class="col-md-6">
+                <label for="name" class="form-label">Name:</label>
+                <input type="text" id="name" name="name" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+                <label for="provider" class="form-label">Anbieter:</label>
+                <input type="text" id="provider" name="provider" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+                <label for="cost" class="form-label">Kosten:</label>
+                <input type="number" step="0.01" id="cost" name="cost" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+                <label for="start_date" class="form-label">Startdatum:</label>
+                <input type="date" id="start_date" name="start_date" class="form-control">
+            </div>
+            <div class="col-md-6">
+                <label for="end_date" class="form-label">Enddatum:</label>
+                <input type="date" id="end_date" name="end_date" class="form-control">
+            </div>
+            <div class="col-md-6">
+                <label for="cancellation_date" class="form-label">Kündigungsdatum:</label>
+                <input type="date" id="cancellation_date" name="cancellation_date" class="form-control">
+            </div>
+            <div class="col-md-6">
+                <label for="cancellation_period" class="form-label">Kündigungsfrist (Monate):</label>
+                <input type="number" id="cancellation_period" name="cancellation_period" class="form-control">
+            </div>
+            <div class="col-md-6">
+                <label for="duration" class="form-label">Laufzeit (Monate):</label>
+                <input type="number" id="duration" name="duration" class="form-control">
+            </div>
+            <div class="col-md-6">
+                <label for="category_id" class="form-label">Kategorie:</label>
+                <select id="category_id" name="category_id" class="form-select">
+                    <option value="1">Kategorie 1</option>
+                    <option value="2">Kategorie 2</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="contract_type_id" class="form-label">Vertragstyp:</label>
+                <select id="contract_type_id" name="contract_type_id" class="form-select">
+                    <option value="1">Typ 1</option>
+                    <option value="2">Typ 2</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="icon" class="form-label">Icon hochladen:</label>
+                <input type="file" id="icon" name="icon" class="form-control" accept="image/*">
+            </div>
+            <div class="col-md-6">
+                <label for="pdf" class="form-label">PDF hochladen:</label>
+                <input type="file" id="pdf" name="pdf" class="form-control" accept="application/pdf">
+            </div>
+            <div class="col-12 text-center">
+                <button type="submit" class="btn btn-primary">Vertrag hinzufügen</button>
+            </div>
+        </form>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
