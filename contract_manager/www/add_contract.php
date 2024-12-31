@@ -80,15 +80,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Hochladen des Icons
     if (isset($_FILES['icon']) && $_FILES['icon']['error'] === UPLOAD_ERR_OK) {
-        $fileExtension = pathinfo($_FILES['icon']['name'], PATHINFO_EXTENSION);
-        $icon_name = uniqid('icon_', true) . '.' . $fileExtension;
-        $icon_path = $icon_dir . $icon_name;
+        $fileExtension = strtolower(pathinfo($_FILES['icon']['name'], PATHINFO_EXTENSION));
+        $allowed_extensions = ['png', 'jpg', 'jpeg', 'gif'];
+        if (!in_array($fileExtension, $allowed_extensions)) {
+            $errors[] = "Nur PNG, JPG, JPEG und GIF sind als Icon erlaubt.";
+        } else {
+            $icon_name = uniqid('icon_', true) . '.' . $fileExtension; // Eindeutiger Name
+            $icon_path = $icon_dir . $icon_name;
 
-        if (!is_dir($icon_dir)) {
-            mkdir($icon_dir, 0777, true);
-        }
-        if (!move_uploaded_file($_FILES['icon']['tmp_name'], $icon_path)) {
-            $errors[] = "Das Icon konnte nicht hochgeladen werden.";
+            if (!is_dir($icon_dir)) {
+                mkdir($icon_dir, 0777, true);
+            }
+            if (!move_uploaded_file($_FILES['icon']['tmp_name'], $icon_path)) {
+                $errors[] = "Das Icon konnte nicht hochgeladen werden.";
+            }
         }
     } else {
         $errors[] = "Bitte ein gültiges Icon hochladen.";
@@ -96,14 +101,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Hochladen des PDFs
     if (isset($_FILES['pdf']) && $_FILES['pdf']['error'] === UPLOAD_ERR_OK) {
-        $pdf_name = basename($_FILES['pdf']['name']);
-        $pdf_path = $pdf_dir . uniqid() . '-' . $pdf_name;
+        $fileExtension = strtolower(pathinfo($_FILES['pdf']['name'], PATHINFO_EXTENSION));
+        if ($fileExtension !== 'pdf') {
+            $errors[] = "Nur PDF-Dateien sind erlaubt.";
+        } else {
+            $pdf_name = uniqid('pdf_', true) . '.' . $fileExtension; // Eindeutiger Name
+            $pdf_path = $pdf_dir . $pdf_name;
 
-        if (!is_dir($pdf_dir)) {
-            mkdir($pdf_dir, 0777, true);
-        }
-        if (!move_uploaded_file($_FILES['pdf']['tmp_name'], $pdf_path)) {
-            $errors[] = "Das PDF konnte nicht hochgeladen werden.";
+            if (!is_dir($pdf_dir)) {
+                mkdir($pdf_dir, 0777, true);
+            }
+            if (!move_uploaded_file($_FILES['pdf']['tmp_name'], $pdf_path)) {
+                $errors[] = "Das PDF konnte nicht hochgeladen werden.";
+            }
         }
     } else {
         $errors[] = "Bitte ein gültiges PDF hochladen.";
