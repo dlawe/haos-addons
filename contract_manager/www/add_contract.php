@@ -86,12 +86,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = "Nur PNG, JPG, JPEG und GIF sind als Icon erlaubt.";
         } else {
             $icon_name = uniqid('icon_', true) . '.' . $fileExtension; // Eindeutiger Name
-            $icon_path = $icon_dir . $icon_name;
+            $icon_path = 'icons/' . $icon_name; // Relativer Pfad für die Datenbank
+            $full_icon_path = $icon_dir . $icon_name; // Absoluter Pfad für die Speicherung
 
             if (!is_dir($icon_dir)) {
                 mkdir($icon_dir, 0777, true);
             }
-            if (!move_uploaded_file($_FILES['icon']['tmp_name'], $icon_path)) {
+            if (!move_uploaded_file($_FILES['icon']['tmp_name'], $full_icon_path)) {
                 $errors[] = "Das Icon konnte nicht hochgeladen werden.";
             }
         }
@@ -106,18 +107,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = "Nur PDF-Dateien sind erlaubt.";
         } else {
             $pdf_name = uniqid('pdf_', true) . '.' . $fileExtension; // Eindeutiger Name
-            $pdf_path = $pdf_dir . $pdf_name;
+            $pdf_path = 'pdfs/' . $pdf_name; // Relativer Pfad für die Datenbank
+            $full_pdf_path = $pdf_dir . $pdf_name; // Absoluter Pfad für die Speicherung
 
             if (!is_dir($pdf_dir)) {
                 mkdir($pdf_dir, 0777, true);
             }
-            if (!move_uploaded_file($_FILES['pdf']['tmp_name'], $pdf_path)) {
+            if (!move_uploaded_file($_FILES['pdf']['tmp_name'], $full_pdf_path)) {
                 $errors[] = "Das PDF konnte nicht hochgeladen werden.";
             }
         }
     } else {
         $errors[] = "Bitte ein gültiges PDF hochladen.";
     }
+
 
     // Überprüfen, ob Fehler vorliegen
     if (empty($errors)) {
