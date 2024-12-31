@@ -194,8 +194,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="col-md-6">
                 <label for="category_id" class="form-label">Kategorie:</label>
                 <select id="category_id" name="category_id" class="form-select">
-                    <option value="1">Kategorie 1</option>
-                    <option value="2">Kategorie 2</option>
+                    <option value="1">Strom</option>
+                    <option value="2">Gas</option>
+                    <option value="3">Internet</option>
+                    <option value="4">Mobilfunk</option>
+                    <option value="5">Versicherung</option>
+                    <option value="6">Streaming</option>
+                    <option value="7">Fitnessstudio</option>
+                    <option value="8">Zeitschriften</option>
+                    <option value="9">Miete</option>
+                    <option value="10">Sonstiges</option>
                 </select>
             </div>
             <div class="col-md-6">
