@@ -197,6 +197,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <option value="8">Zeitschriften</option>
                             <option value="9">Miete</option>
                             <option value="10">Sonstiges</option>
+                            <option value="11">Wartungsverträge</option>
+                            <option value="12">Cloud-Dienste</option>
+                            <option value="13">Software-Abonnements</option>
+                            <option value="14">Mitgliedschaften</option>
+                            <option value="15">Autoversicherung</option>
+                            <option value="16">Rechtsschutz</option>
+                            <option value="17">Hausrat</option>
+                            <option value="18">Reiseversicherungen</option>
+                            <option value="19">Bausparen</option>
+                            <option value="20">Kreditverträge</option>
                         </select>
                     </div>
                     <div class="col-md-6">
