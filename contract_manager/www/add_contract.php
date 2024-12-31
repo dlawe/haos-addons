@@ -26,6 +26,7 @@ ensureTableExists($db, 'contracts', "
     cost REAL NOT NULL,
     start_date DATE,
     end_date DATE,
+    contract_holder TEXT,
     canceled BOOLEAN DEFAULT 0,
     auto_renew BOOLEAN DEFAULT 1,
     duration INTEGER,
@@ -44,7 +45,8 @@ $columns = [
     'cancellation_period' => 'INTEGER',
     'category_id' => 'INTEGER',
     'icon_path' => 'TEXT',
-    'pdf_path' => 'TEXT'
+    'pdf_path' => 'TEXT',
+    'contract_holder' => 'TEXT'
 ];
 foreach ($columns as $column => $definition) {
     ensureColumnExists($db, 'contracts', $column, $definition);
@@ -57,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cost = $_POST['cost'];
     $start_date = $_POST['start_date'];
     $end_date = $_POST['end_date'];
+    $contract_holder = $_POST['contract_holder'] ?? null;
     $cancellation_period = $_POST['cancellation_period'] ?? null;
     $duration = $_POST['duration'] ?? null;
     $category_id = $_POST['category_id'] ?? null;
@@ -119,13 +122,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         // Daten in die Datenbank einfügen
         $sql = "INSERT INTO contracts (
-            name, provider, cost, start_date, end_date, 
+            name, provider, cost, start_date, end_date, contract_holder, 
             canceled, auto_renew, duration, cancellation_period, 
             category_id, icon_path, pdf_path
-        ) VALUES (?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?)";
+        ) VALUES (?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
         $stmt->execute([
-            $name, $provider, $cost, $start_date, $end_date,
+            $name, $provider, $cost, $start_date, $end_date, $contract_holder,
             $duration, $cancellation_period, $category_id, $icon_path, $pdf_path
         ]);
 
@@ -163,6 +166,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="col-md-6">
                         <label for="provider" class="form-label">Anbieter:</label>
                         <input type="text" id="provider" name="provider" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="contract_holder" class="form-label">Vertragsnehmer:</label>
+                        <input type="text" id="contract_holder" name="contract_holder" class="form-control" required>
                     </div>
                     <div class="col-md-6">
                         <label for="cost" class="form-label">Kosten:</label>
