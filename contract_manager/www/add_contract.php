@@ -26,28 +26,23 @@ ensureTableExists($db, 'contracts', "
     cost REAL NOT NULL,
     start_date DATE,
     end_date DATE,
-    cancellation_date DATE,
     canceled BOOLEAN DEFAULT 0,
     auto_renew BOOLEAN DEFAULT 1,
     duration INTEGER,
     cancellation_period INTEGER,
     category_id INTEGER,
-    contract_type_id INTEGER,
     icon_path TEXT,
     pdf_path TEXT,
-    FOREIGN KEY (category_id) REFERENCES categories(id),
-    FOREIGN KEY (contract_type_id) REFERENCES contract_types(id)
+    FOREIGN KEY (category_id) REFERENCES categories(id)
 ");
 
 // Sicherstellen, dass alle benötigten Spalten existieren
 $columns = [
-    'cancellation_date' => 'DATE',
     'canceled' => 'BOOLEAN DEFAULT 0',
     'auto_renew' => 'BOOLEAN DEFAULT 1',
     'duration' => 'INTEGER',
     'cancellation_period' => 'INTEGER',
     'category_id' => 'INTEGER',
-    'contract_type_id' => 'INTEGER',
     'icon_path' => 'TEXT',
     'pdf_path' => 'TEXT'
 ];
@@ -62,11 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cost = $_POST['cost'];
     $start_date = $_POST['start_date'];
     $end_date = $_POST['end_date'];
-    $cancellation_date = $_POST['cancellation_date'] ?? null;
     $cancellation_period = $_POST['cancellation_period'] ?? null;
     $duration = $_POST['duration'] ?? null;
     $category_id = $_POST['category_id'] ?? null;
-    $contract_type_id = $_POST['contract_type_id'] ?? null;
 
     // Verzeichnisse definieren
     $icon_dir = '/data/icons/';
@@ -126,14 +119,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         // Daten in die Datenbank einfügen
         $sql = "INSERT INTO contracts (
-            name, provider, cost, start_date, end_date, cancellation_date, 
+            name, provider, cost, start_date, end_date, 
             canceled, auto_renew, duration, cancellation_period, 
-            category_id, contract_type_id, icon_path, pdf_path
-        ) VALUES (?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?, ?)";
+            category_id, icon_path, pdf_path
+        ) VALUES (?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
         $stmt->execute([
-            $name, $provider, $cost, $start_date, $end_date, $cancellation_date,
-            $duration, $cancellation_period, $category_id, $contract_type_id, $icon_path, $pdf_path
+            $name, $provider, $cost, $start_date, $end_date,
+            $duration, $cancellation_period, $category_id, $icon_path, $pdf_path
         ]);
 
         echo "<p style='color:green;'>Vertrag erfolgreich hinzugefügt!</p>";
@@ -184,10 +177,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input type="date" id="end_date" name="end_date" class="form-control">
                     </div>
                     <div class="col-md-6">
-                        <label for="cancellation_date" class="form-label">Kündigungsdatum:</label>
-                        <input type="date" id="cancellation_date" name="cancellation_date" class="form-control">
-                    </div>
-                    <div class="col-md-6">
                         <label for="cancellation_period" class="form-label">Kündigungsfrist (Monate):</label>
                         <input type="number" id="cancellation_period" name="cancellation_period" class="form-control">
                     </div>
@@ -208,13 +197,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <option value="8">Zeitschriften</option>
                             <option value="9">Miete</option>
                             <option value="10">Sonstiges</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="contract_type_id" class="form-label">Vertragstyp:</label>
-                        <select id="contract_type_id" name="contract_type_id" class="form-select">
-                            <option value="1">Typ 1</option>
-                            <option value="2">Typ 2</option>
                         </select>
                     </div>
                     <div class="col-md-6">
