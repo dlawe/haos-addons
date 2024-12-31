@@ -20,6 +20,8 @@ RUN apk add --no-cache \
     lighttpd \
     bash
 
+RUN addgroup -g 82 -S www-data && adduser -u 82 -D -S -G www-data www-data
+
 # PHP-Konfigurationsanpassungen
 RUN php_ini_path=$(php --ini | grep "Loaded Configuration File" | awk '{print $4}') && \
     echo "upload_max_filesize = 10M" >> $php_ini_path && \
