@@ -46,8 +46,6 @@ RUN mkdir -p /etc/lighttpd && \
     echo 'fastcgi.server = ( ".php" => (( "bin-path" => "/usr/bin/php-cgi", "socket" => "/tmp/php.socket" )))' >> /etc/lighttpd/lighttpd.conf && \
     echo 'server.indexfiles = ( "index.php", "index.html", "index.htm" )' >> /etc/lighttpd/lighttpd.conf && \
     echo 'server.document-root = "/var/www/html"' >> /etc/lighttpd/lighttpd.conf && \
-    echo 'alias.url += ( "/icons/" => "/data/icons/" )' >> /etc/lighttpd/lighttpd.conf && \
-    echo 'alias.url += ( "/pdfs/" => "/data/pdfs/" )' >> /etc/lighttpd/lighttpd.conf && \
     echo 'server.errorlog = "/dev/stderr"' >> /etc/lighttpd/lighttpd.conf && \
     echo 'server.bind = "0.0.0.0"' >> /etc/lighttpd/lighttpd.conf && \
     echo 'accesslog.filename = "/dev/stdout"' >> /etc/lighttpd/lighttpd.conf
@@ -56,7 +54,7 @@ RUN mkdir -p /etc/lighttpd && \
 RUN lighttpd -t -f /etc/lighttpd/lighttpd.conf
 
 # Sicherstellen, dass Verzeichnisse vorhanden sind
-RUN mkdir -p /data/icons /data/pdfs && chmod -R 755 /data && chown -R www-data:www-data /data
+RUN mkdir -p /data/icons /data/pdfs && chmod -R 777 /data
 
 # Datenbankvolumen deklarieren
 VOLUME ["/data"]
