@@ -37,6 +37,12 @@ function getCardClass($contract) {
     return ''; // Standard: Keine spezifische Farbe
 }
 
+// Funktion zur Anpassung der Pfade für Ingress
+function getIngressPath($path) {
+    $base_path = $_SERVER['HTTP_X_INGRESS_PATH'] ?? '';
+    return htmlspecialchars($base_path . '/' . ltrim($path, '/'));
+}
+
 // Filter aus der URL verarbeiten
 $filter = $_GET['filter'] ?? 'all';
 $search = $_GET['search'] ?? '';
@@ -173,7 +179,7 @@ $contracts = getContracts($db, $condition, $search);
                 <div class="contract-card <?= getCardClass($row); ?>">
                     <!-- Icon oben rechts -->
                     <?php if (!empty($row['icon_path'])): ?>
-                        <img src="<?= htmlspecialchars($row['icon_path']); ?>" alt="Icon" class="icon">
+                        <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
                     <?php endif; ?>
 
                     <h5><?= htmlspecialchars($row['name']); ?></h5>
@@ -188,7 +194,7 @@ $contracts = getContracts($db, $condition, $search);
 
                     <!-- PDF Icon unten rechts -->
                     <?php if (!empty($row['pdf_path'])): ?>
-                        <a href="<?= htmlspecialchars($row['pdf_path']); ?>" target="_blank">
+                        <a href="<?= getIngressPath($row['pdf_path']); ?>" target="_blank">
                             <img src="pdf-icon.png" alt="PDF öffnen" class="pdf-icon">
                         </a>
                     <?php endif; ?>
