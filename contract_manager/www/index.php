@@ -90,6 +90,7 @@ if ($filter === 'active') {
                   AND cancellation_date < date('now', '+30 days')";
 }
 
+// Verträge aus der DB holen
 $contracts = getContracts($db, $condition, $search);
 ?>
 
@@ -100,11 +101,14 @@ $contracts = getContracts($db, $condition, $search);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vertragsübersicht</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <style>
         body {
             background-color: #f8f9fa;
             font-family: Arial, sans-serif;
+            margin: 0;
         }
+
         .header {
             position: fixed;
             top: 0;
@@ -129,6 +133,7 @@ $contracts = getContracts($db, $condition, $search);
             text-decoration: none;
             font-weight: bold;
         }
+
         .container {
             padding-top: 70px;
         }
@@ -146,6 +151,10 @@ $contracts = getContracts($db, $condition, $search);
             position: relative;
             margin-bottom: 20px;
             border-left: 8px solid transparent;
+            cursor: pointer; /* Hand-Cursor, wenn man über die Karte fährt */
+        }
+        .contract-card h5 {
+            margin-bottom: 10px;
         }
         .contract-card img.icon {
             position: absolute;
@@ -157,14 +166,8 @@ $contracts = getContracts($db, $condition, $search);
             max-width: 100%;
             max-height: 100%;
         }
-        .contract-card img.pdf-icon {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-        }
+
+        /* Farbliche Kennzeichnungen */
         .border-red {
             border-left-color: #dc3545;
         }
@@ -174,57 +177,173 @@ $contracts = getContracts($db, $condition, $search);
         .border-gray {
             border-left-color: #6c757d;
         }
+
+        /* Overlay (Vollbild) */
+        .overlay {
+            display: none; /* Anfangs unsichtbar */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 9999;
+        }
+        .overlay-content {
+            background-color: #fff;
+            width: 90%;
+            height: 90%;
+            margin: 3% auto;
+            border-radius: 8px;
+            overflow: hidden; /* damit die Ecken schön abgerundet sind */
+            display: flex;    /* zweispaltiges Layout: links Details, rechts PDF */
+            position: relative;
+        }
+        .overlay-details {
+            width: 40%;
+            padding: 20px;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        .overlay-pdf {
+            width: 60%;
+            background-color: #f0f0f0;
+            position: relative;
+        }
+        .overlay-pdf iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ccc;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Vertragsmanager</h1>
-        <a href="add_contract.php">+ Vertrag hinzufügen</a>
+
+<div class="header">
+    <h1>Vertragsmanager</h1>
+    <a href="add_contract.php">+ Vertrag hinzufügen</a>
+</div>
+
+<div class="container">
+    <h1 class="text-center">Vertragsübersicht</h1>
+
+    <!-- Vertragskarten -->
+    <div class="card-container">
+        <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
+            <?php
+                // JSON für das JavaScript aufbereiten
+                // Wir escapen Sonderzeichen sicherheitshalber
+                $contractJson = htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8');
+            ?>
+            <div 
+                class="contract-card <?= getCardClass($row); ?>"
+                onclick="openOverlay('<?= $contractJson ?>')"
+            >
+                <?php if (!empty($row['icon_path'])): ?>
+                    <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
+                <?php endif; ?>
+
+                <!-- Kurze Infos direkt auf der Karte -->
+                <h5><?= htmlspecialchars($row['name']); ?></h5>
+                <p>Anbieter: <?= htmlspecialchars($row['provider']); ?></p>
+                <p>Kosten: <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
+                <!-- Wenn du willst, kannst du noch Start- oder Enddatum direkt hier anzeigen -->
+            </div>
+        <?php endwhile; ?>
     </div>
+</div>
 
-    <div class="container">
-        <h1 class="text-center">Vertragsübersicht</h1>
+<!-- Overlay für detaillierte Anzeige -->
+<div class="overlay" id="contractOverlay">
+    <div class="overlay-content">
+        <!-- Linke Spalte: Details -->
+        <div class="overlay-details" id="contractDetails">
+            <!-- Wird per JS gefüllt -->
+        </div>
 
-        <!-- Vertragskarten -->
-        <div class="card-container">
-            <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
-                <div class="contract-card <?= getCardClass($row); ?>">
-                    <!-- Icon oben rechts -->
-                    <?php if (!empty($row['icon_path'])): ?>
-                        <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
-                    <?php endif; ?>
-
-                    <h5><?= htmlspecialchars($row['name']); ?></h5>
-                    <p class="provider">Anbieter: <?= htmlspecialchars($row['provider']); ?></p>
-                    <p>Vertragsnehmer: <?= htmlspecialchars($row['contract_holder']); ?></p>
-                    <p class="cost">Kosten: <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
-                    <p class="dates">
-                        Start: <?= formatDate($row['start_date']); ?><br>
-                        Ende: <?= formatDate($row['end_date']); ?>
-                    </p>
-                    <p>Laufzeit: <?= htmlspecialchars($row['duration']); ?> Monate</p>
-                    <p>Kündigungsfrist: <?= htmlspecialchars($row['cancellation_period']); ?> Monate</p>
-
-                    <!-- Kategorie ausgeben statt ID -->
-                    <p>Kategorie: 
-                        <?php
-                        $catId = $row['category_id'];
-                        echo isset($categories[$catId])
-                            ? htmlspecialchars($categories[$catId])
-                            : 'Unbekannte Kategorie';
-                        ?>
-                    </p>
-
-                    <!-- PDF Icon unten rechts -->
-                    <?php if (!empty($row['pdf_path'])): ?>
-                        <a href="<?= getIngressPath($row['pdf_path']); ?>" target="_blank">
-                            <img src="pdf-icon.png" alt="PDF öffnen" class="pdf-icon">
-                        </a>
-                    <?php endif; ?>
-                </div>
-            <?php endwhile; ?>
+        <!-- Rechte Spalte: PDF-Ansicht -->
+        <div class="overlay-pdf">
+            <button class="close-btn" onclick="closeOverlay()">Schließen</button>
+            <iframe id="contractPdf" src=""></iframe>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+
+<script>
+function openOverlay(contractString) {
+    // JSON-String in Objekt umwandeln
+    const contract = JSON.parse(contractString);
+
+    // Overlay anzeigen
+    document.getElementById('contractOverlay').style.display = 'block';
+
+    // Linke Spalte (Details) zusammenbauen
+    let detailsHtml = `
+        <h2>${escapeHtml(contract.name)}</h2>
+        <p><strong>Anbieter:</strong> ${escapeHtml(contract.provider)}</p>
+        <p><strong>Vertragsnehmer:</strong> ${escapeHtml(contract.contract_holder)}</p>
+        <p><strong>Kosten:</strong> ${parseFloat(contract.cost).toFixed(2)} €</p>
+        <p><strong>Start:</strong> ${formatDate(contract.start_date)}</p>
+        <p><strong>Ende:</strong> ${formatDate(contract.end_date)}</p>
+        <p><strong>Laufzeit (Monate):</strong> ${escapeHtml(contract.duration)}</p>
+        <p><strong>Kündigungsfrist (Monate):</strong> ${escapeHtml(contract.cancellation_period)}</p>
+    `;
+
+    // Wenn du die Kategorie ausgeben willst (clientseitig):
+    // Du hast sie als ID in contract.category_id. 
+    // Entweder du gibst sie hier als ID aus oder wandelst sie clientseitig um.
+    // Für die Demo hier einfach "Kategorie-ID"
+    detailsHtml += `<p><strong>Kategorie-ID:</strong> ${escapeHtml(contract.category_id)}</p>`;
+
+    document.getElementById('contractDetails').innerHTML = detailsHtml;
+
+    // PDF im iframe laden
+    const iframe = document.getElementById('contractPdf');
+    if (contract.pdf_path && contract.pdf_path !== '') {
+        // Ingress-Pfad anpassen, falls nötig, oder direkt:
+        iframe.src = contract.pdf_path;
+    } else {
+        // Wenn kein PDF vorhanden ist, src leeren
+        iframe.src = '';
+    }
+}
+
+function closeOverlay() {
+    document.getElementById('contractOverlay').style.display = 'none';
+    // Beim Schließen iframe zurücksetzen, um z.B. das PDF neu zu laden, falls gewünscht
+    document.getElementById('contractPdf').src = '';
+}
+
+// Hilfsfunktionen für sicheres Escapen und Datumsformatierung (ähnlich wie in PHP)
+function escapeHtml(text) {
+    if (typeof text !== 'string') return text;
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+// Einfaches Datumsformat (yyyy-mm-dd -> dd.mm.yyyy)
+function formatDate(dateString) {
+    if (!dateString) return '';
+    const parts = dateString.split('-');
+    if (parts.length !== 3) return dateString;
+    return parts.reverse().join('.');
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
