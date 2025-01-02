@@ -159,472 +159,381 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
     <style>
         body {
             background-color: #f8f9fa;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
         }
 
-        .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 56px;
-            background-color: #007bff;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 15px;
-            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-        }
-        .header h1 {
-            font-size: 1.2rem;
-            margin: 0;
-        }
-        .header a {
-            color: white;
-            text-decoration: none;
+        /* Anpassung der Navbar */
+        .navbar-brand {
             font-weight: bold;
-        }
-
-        .container {
-            padding-top: 70px;
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        /* Statistik-Bereich links */
-        .statistics-section {
-            background-color: #ffffff;
-            padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            flex: 1 1 250px;
-            min-width: 250px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .statistics-section h2 {
-            margin-top: 0;
             font-size: 1.5rem;
-            margin-bottom: 20px;
+        }
+        .navbar-nav .nav-link {
+            color: white !important;
+            font-weight: 500;
+        }
+        .navbar-nav .nav-link:hover {
+            color: #d1d1d1 !important;
         }
 
-        /* Inneres Layout der Statistik-Sektion */
-        .stat-content {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        /* Numerische Statistiken */
-        .stat-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 15px;
-            flex: 1;
-        }
+        /* Anpassung der Statistik-Karten */
         .stat-card {
-            background: #f7f7f7;
-            border-radius: 6px;
-            padding: 15px;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
             text-align: center;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         .stat-card h3 {
             margin: 0;
-            font-size: 1.5rem; /* Angepasste Schriftgröße */
+            font-size: 1.5rem;
             color: #007bff;
         }
         .stat-card p {
-            margin: 5px 0 0;
+            margin: 10px 0 0;
             font-size: 1rem;
             color: #555;
         }
 
-        /* Diagramm */
-        .chart-container {
-            width: 100%;
-            max-width: 300px;
-            margin: 0 auto;
-        }
-
-        /* Vertragskarten rechts */
-        .contracts-section {
-            flex: 3 1 700px;
-            min-width: 300px;
-        }
-        .contracts-section h2 {
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-        }
-        .card-container {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
+        /* Anpassung der Vertragskarten */
         .contract-card {
             background-color: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             border-radius: 12px;
-            width: 300px;
-            padding: 15px;
+            width: 100%;
+            padding: 20px;
             position: relative;
-            margin-bottom: 20px;
             border-left: 8px solid transparent; /* Farbe wird inline gesetzt */
             cursor: pointer; /* Hand-Cursor, wenn man über die Karte fährt */
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .contract-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         .contract-card h5 {
             margin-bottom: 10px;
             font-size: 1.2rem;
+            font-weight: 600;
         }
         .contract-card p {
             margin: 5px 0;
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: #555;
         }
         .contract-card img.icon {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 20px;
+            right: 20px;
             width: 40px;
             height: 40px;
             object-fit: contain;
-            max-width: 100%;
-            max-height: 100%;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            padding: 5px;
         }
 
-        /* Overlay (Vollbild) */
-        .overlay {
-            display: none; /* Anfangs unsichtbar */
-            position: fixed;
-            top: 0;
-            left: 0;
+        /* Anpassung des Diagramms */
+        .chart-container {
             width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 9999;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
+            max-width: 400px;
+            margin: 0 auto;
         }
-        .overlay.show {
-            display: block;
-            opacity: 1;
-            pointer-events: auto; 
-            animation: fadeIn 0.3s forwards;
+
+        /* Anpassung des Modals */
+        .modal-header {
+            background-color: #007bff;
+            color: white;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-        }
-        .overlay-content {
-            background-color: #fff;
-            width: 90%;
-            height: 90%;
-            margin: 3% auto;
-            border-radius: 8px;
-            overflow: hidden; 
-            display: flex;    
-            position: relative;
-            animation: slideUp 0.4s ease forwards;
-            transform: translateY(100px);
-            opacity: 0;
-        }
-        @keyframes slideUp {
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        .overlay-details {
-            width: 40%;
-            padding: 20px;
-            overflow-y: auto;
-            box-sizing: border-box;
-        }
-        .overlay-details h2 {
-            margin-top: 0;
+        .modal-title {
             font-size: 1.5rem;
         }
-        .overlay-details p {
-            margin-bottom: 8px;
+        .modal-body p {
             font-size: 1rem;
             color: #333;
         }
-        .overlay-pdf {
-            width: 60%;
-            background-color: #f0f0f0;
-            position: relative;
-            box-shadow: -4px 0 12px rgba(0,0,0,0.05);
-        }
-        .overlay-pdf iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            background: #dc3545;
-            border: none;
-            border-radius: 4px;
-            padding: 5px 10px;
-            cursor: pointer;
-            color: #fff;
-            font-weight: bold;
-            font-size: 1rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            transition: background 0.2s;
-        }
-        .close-btn:hover {
-            background: #c82333;
+
+        /* Suchleiste */
+        .search-bar {
+            margin-bottom: 20px;
         }
 
         /* Responsive Anpassungen */
-        @media (max-width: 992px) {
-            .container {
-                flex-direction: column;
-            }
-            .statistics-section, .contracts-section {
-                min-width: 100%;
-            }
-            .overlay-content {
-                flex-direction: column;
-            }
-            .overlay-details, .overlay-pdf {
-                width: 100%;
-                height: 50%;
-            }
-            .overlay-pdf {
-                height: 50%;
-            }
-            /* Statistik-Innenlayout anpassen */
+        @media (max-width: 768px) {
             .stat-content {
                 flex-direction: column;
             }
             .chart-container {
                 max-width: 100%;
             }
+            .contract-card {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>Vertragsmanager</h1>
-    <a href="add_contract.php">+ Vertrag hinzufügen</a>
-</div>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Vertragsmanager</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#">Übersicht</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="add_contract.php">+ Vertrag hinzufügen</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-<div class="container">
-    <!-- Statistik-Bereich links -->
-    <div class="statistics-section">
-        <h2>Statistiken</h2>
-
-        <!-- Inneres Layout: Numerische Statistiken und Diagramm nebeneinander -->
-        <div class="stat-content">
-            <!-- Numerische Statistiken -->
-            <div class="stat-grid">
-                <!-- Gesamtanzahl Verträge -->
-                <div class="stat-card">
-                    <h3><?= $totalContracts ?></h3>
-                    <p>Gesamt-Verträge</p>
-                </div>
-
-                <!-- Anzahl aktive Verträge -->
-                <div class="stat-card">
-                    <h3><?= $activeCount ?></h3>
-                    <p>Aktive Verträge</p>
-                </div>
-
-                <!-- Anzahl gekündigte Verträge -->
-                <div class="stat-card">
-                    <h3><?= $canceledCount ?></h3>
-                    <p>Gekündigte Verträge</p>
-                </div>
-
-                <!-- Summierte Kosten aller aktiven Verträge -->
-                <div class="stat-card">
-                    <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
-                    <p>Gesamtkosten (aktiv)</p>
-                </div>
-
-                <!-- Neue Statistik-Karte: Kosten im Monat -->
-                <div class="stat-card">
-                    <h3><?= number_format($totalMonthlyCosts, 2, ',', '.') ?> €</h3>
-                    <p>Kosten im Monat</p>
-                </div>
-
-                <!-- Neue Statistik-Karte: Kosten im Jahr -->
-                <div class="stat-card">
-                    <h3><?= number_format($totalYearlyCosts, 2, ',', '.') ?> €</h3>
-                    <p>Kosten im Jahr</p>
+    <!-- Hauptcontainer -->
+    <div class="container my-4">
+        <div class="row">
+            <!-- Statistik-Bereich -->
+            <div class="col-lg-4 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Statistiken</h5>
+                        <div class="search-bar">
+                            <input type="text" id="searchInput" class="form-control" placeholder="Verträge suchen..." onkeyup="filterContracts()">
+                        </div>
+                        <div class="row g-3">
+                            <!-- Gesamtanzahl Verträge -->
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <h3><?= $totalContracts ?></h3>
+                                    <p>Gesamt-Verträge</p>
+                                </div>
+                            </div>
+                            <!-- Anzahl aktive Verträge -->
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <h3><?= $activeCount ?></h3>
+                                    <p>Aktive Verträge</p>
+                                </div>
+                            </div>
+                            <!-- Anzahl gekündigte Verträge -->
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <h3><?= $canceledCount ?></h3>
+                                    <p>Gekündigte Verträge</p>
+                                </div>
+                            </div>
+                            <!-- Gesamtkosten (aktiv) -->
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
+                                    <p>Gesamtkosten (aktiv)</p>
+                                </div>
+                            </div>
+                            <!-- Kosten im Monat -->
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <h3><?= number_format($totalMonthlyCosts, 2, ',', '.') ?> €</h3>
+                                    <p>Kosten im Monat</p>
+                                </div>
+                            </div>
+                            <!-- Kosten im Jahr -->
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <h3><?= number_format($totalYearlyCosts, 2, ',', '.') ?> €</h3>
+                                    <p>Kosten im Jahr</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Diagramm -->
+                        <div class="mt-4">
+                            <div class="chart-container">
+                                <canvas id="costChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Diagramm rechts neben den numerischen Statistiken -->
-            <div class="chart-container">
-                <canvas id="costChart"></canvas>
+            <!-- Vertragskarten-Bereich -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Vertragsübersicht</h5>
+                        <div class="row row-cols-1 row-cols-md-2 g-4" id="contractsContainer">
+                            <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
+                                <?php
+                                    // JSON für das JavaScript aufbereiten
+                                    $contractJson = htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8');
+                                    // Farbe basierend auf der Kategorie
+                                    $categoryId = $row['category_id'];
+                                    $categoryColor = isset($categories[$categoryId]['color']) ? $categories[$categoryId]['color'] : '#000000'; // Fallback-Farbe
+                                ?>
+                                <div class="col contract-card-item">
+                                    <div 
+                                        class="contract-card" 
+                                        data-contract='<?= $contractJson ?>' 
+                                        style="border-left-color: <?= $categoryColor ?>;">
+                                        <?php if (!empty($row['icon_path'])): ?>
+                                            <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
+                                        <?php endif; ?>
+                                        <h5><?= htmlspecialchars($row['name']); ?></h5>
+                                        <p><strong>Anbieter:</strong> <?= htmlspecialchars($row['provider']); ?></p>
+                                        <p><strong>Kosten:</strong> <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
+                                    </div>
+                                </div>
+                            <?php endwhile; ?>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Vertragskarten rechts -->
-    <div class="contracts-section">
-        <h2>Vertragsübersicht</h2>
-
-        <!-- Vertragskarten -->
-        <div class="card-container">
-            <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
-                <?php
-                    // JSON für das JavaScript aufbereiten
-                    $contractJson = htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8');
-                    // Farbe basierend auf der Kategorie
-                    $categoryId = $row['category_id'];
-                    $categoryColor = isset($categories[$categoryId]['color']) ? $categories[$categoryId]['color'] : '#000000'; // Fallback-Farbe
-                ?>
-                <div 
-                    class="contract-card"
-                    onclick="openOverlay('<?= $contractJson ?>')"
-                    style="border-left-color: <?= $categoryColor ?>;" 
-                >
-                    <?php if (!empty($row['icon_path'])): ?>
-                        <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
-                    <?php endif; ?>
-
-                    <!-- Kurze Infos direkt auf der Karte -->
-                    <h5><?= htmlspecialchars($row['name']); ?></h5>
-                    <p>Anbieter: <?= htmlspecialchars($row['provider']); ?></p>
-                    <p>Kosten: <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
+    <!-- Bootstrap Modal für Vertragsdetails -->
+    <div class="modal fade" id="contractModal" tabindex="-1" aria-labelledby="contractModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 id="contractModalLabel" class="modal-title">Vertragsdetails</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
                 </div>
-            <?php endwhile; ?>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Details -->
+                        <div class="col-md-6">
+                            <p><strong>Anbieter:</strong> <span id="modalProvider"></span></p>
+                            <p><strong>Vertragsnehmer:</strong> <span id="modalHolder"></span></p>
+                            <p><strong>Kosten:</strong> <span id="modalCost"></span> €</p>
+                            <p><strong>Start:</strong> <span id="modalStart"></span></p>
+                            <p><strong>Ende:</strong> <span id="modalEnd"></span></p>
+                            <p><strong>Laufzeit (Monate):</strong> <span id="modalDuration"></span></p>
+                            <p><strong>Kündigungsfrist (Monate):</strong> <span id="modalCancellation"></span></p>
+                            <p><strong>Kategorie:</strong> <span id="modalCategory"></span></p>
+                        </div>
+                        <!-- PDF -->
+                        <div class="col-md-6">
+                            <iframe id="modalPdf" src="" style="width: 100%; height: 300px; border: none;"></iframe>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Overlay für detaillierte Anzeige -->
-<div class="overlay" id="contractOverlay">
-    <div class="overlay-content">
-        <!-- Linke Spalte: Details -->
-        <div class="overlay-details" id="contractDetails">
-            <!-- Wird per JS gefüllt -->
-        </div>
+    <!-- Bootstrap JS und Abhängigkeiten -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-        <!-- Rechte Spalte: PDF-Ansicht -->
-        <div class="overlay-pdf">
-            <button class="close-btn" onclick="closeOverlay()">✕</button>
-            <iframe id="contractPdf" src=""></iframe>
-        </div>
-    </div>
-</div>
+    <script>
+        // Kategorie-IDs zu Namen aus PHP übertragen
+        const categories = <?= $categoryNameJson; ?>;
 
-<script>
-    // Kategorie-IDs zu Namen aus PHP übertragen
-    const categories = <?= $categoryNameJson; ?>;
+        // Chart.js Diagramm erstellen
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('costChart').getContext('2d');
+            const catLabels = <?= $categoryLabels ?>; // ["Strom","Gas","Internet",...]
+            const catCosts  = <?= $categoryCosts ?>;  // [120,50,20,...]
+            const chartColors = <?= $categoryChartColors ?>; // ["#007bff", "#28a745", ...]
 
-    // Chart.js Diagramm erstellen
-    window.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('costChart').getContext('2d');
-        const catLabels = <?= $categoryLabels ?>; // ["Strom","Gas","Internet",...]
-        const catCosts  = <?= $categoryCosts ?>;  // [120,50,20,...]
-        const chartColors = <?= $categoryChartColors ?>; // ["#007bff", "#28a745", ...]
-
-        new Chart(ctx, {
-            type: 'pie',  // Du kannst 'bar', 'pie', 'doughnut' usw. wählen
-            data: {
-                labels: catLabels,
-                datasets: [{
-                    label: 'Kosten je Kategorie (€)',
-                    data: catCosts,
-                    backgroundColor: chartColors, // Verwende die gleichen Farben wie in den Vertragskarten
-                    borderColor: '#fff',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                maintainAspectRatio: false, // Damit es auch bei weniger Platz gut aussieht
-                plugins: {
-                    legend: {
-                        position: 'right',
-                    },
-                    tooltip: {
-                        enabled: true,
+            new Chart(ctx, {
+                type: 'pie',  // Du kannst 'bar', 'pie', 'doughnut' usw. wählen
+                data: {
+                    labels: catLabels,
+                    datasets: [{
+                        label: 'Kosten je Kategorie (€)',
+                        data: catCosts,
+                        backgroundColor: chartColors, // Verwende die gleichen Farben wie in den Vertragskarten
+                        borderColor: '#fff',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Damit es auch bei weniger Platz gut aussieht
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        tooltip: {
+                            enabled: true,
+                        }
                     }
                 }
-            }
+            });
         });
-    });
 
-    // Overlay-Funktionen
-    function openOverlay(contractString) {
-        const contract = JSON.parse(contractString);
-        const overlay = document.getElementById('contractOverlay');
+        // Funktion zum Öffnen des Modals mit Vertragsdetails
+        const contractModal = new bootstrap.Modal(document.getElementById('contractModal'), {
+            keyboard: false
+        });
 
-        let detailsHtml = `
-            <h2>${escapeHtml(contract.name)}</h2>
-            <p><strong>Anbieter:</strong> ${escapeHtml(contract.provider)}</p>
-            <p><strong>Vertragsnehmer:</strong> ${escapeHtml(contract.contract_holder)}</p>
-            <p><strong>Kosten:</strong> ${parseFloat(contract.cost).toFixed(2)} €</p>
-            <p><strong>Start:</strong> ${formatDate(contract.start_date)}</p>
-            <p><strong>Ende:</strong> ${formatDate(contract.end_date)}</p>
-            <p><strong>Laufzeit (Monate):</strong> ${escapeHtml(contract.duration)}</p>
-            <p><strong>Kündigungsfrist (Monate):</strong> ${escapeHtml(contract.cancellation_period)}</p>
-            <p><strong>Kategorie:</strong> ${getCategoryName(contract.category_id)}</p>
-        `;
-        document.getElementById('contractDetails').innerHTML = detailsHtml;
+        document.querySelectorAll('.contract-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const contract = JSON.parse(this.getAttribute('data-contract'));
+                
+                // Füllen der Modal-Inhalte
+                document.getElementById('contractModalLabel').textContent = contract.name;
+                document.getElementById('modalProvider').textContent = contract.provider;
+                document.getElementById('modalHolder').textContent = contract.contract_holder;
+                document.getElementById('modalCost').textContent = parseFloat(contract.cost).toFixed(2);
+                document.getElementById('modalStart').textContent = formatDate(contract.start_date);
+                document.getElementById('modalEnd').textContent = formatDate(contract.end_date);
+                document.getElementById('modalDuration').textContent = contract.duration;
+                document.getElementById('modalCancellation').textContent = contract.cancellation_period;
+                document.getElementById('modalCategory').textContent = categories[contract.category_id] || 'Unbekannt';
 
-        // PDF im iframe laden
-        const iframe = document.getElementById('contractPdf');
-        if (contract.pdf_path && contract.pdf_path !== '') {
-            iframe.src = contract.pdf_path;
-        } else {
-            iframe.src = '';
+                // PDF laden, falls vorhanden
+                const modalPdf = document.getElementById('modalPdf');
+                if (contract.pdf_path && contract.pdf_path !== '') {
+                    modalPdf.src = contract.pdf_path;
+                } else {
+                    modalPdf.src = 'about:blank';
+                }
+
+                // Öffnen des Modals
+                contractModal.show();
+            });
+        });
+
+        // Hilfsfunktionen
+        function formatDate(dateString) {
+            if (!dateString) return 'Unbekannt';
+            const parts = dateString.split('-');
+            if (parts.length !== 3) return dateString;
+            return `${parts[2]}.${parts[1]}.${parts[0]}`;
         }
-        // Overlay anzeigen
-        overlay.classList.add('show');
-    }
 
-    function closeOverlay() {
-        const overlay = document.getElementById('contractOverlay');
-        const iframe = document.getElementById('contractPdf');
-        overlay.classList.remove('show');
-        iframe.src = '';
-    }
+        // Suchfunktion
+        function filterContracts() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const contracts = document.querySelectorAll('.contract-card-item');
 
-    // Hilfsfunktionen
-    function escapeHtml(text) {
-        if (typeof text !== 'string') return text;
-        return text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
+            contracts.forEach(function(contract) {
+                const card = contract.querySelector('.contract-card');
+                const name = card.querySelector('h5').textContent.toLowerCase();
+                const provider = card.querySelector('p:nth-child(2)').textContent.toLowerCase();
 
-    function formatDate(dateString) {
-        if (!dateString) return '';
-        const parts = dateString.split('-');
-        if (parts.length !== 3) return dateString;
-        return `${parts[2]}.${parts[1]}.${parts[0]}`;
-    }
-
-    // Funktion zur Umwandlung der Kategorie-ID in den Namen (clientseitig)
-    function getCategoryName(catId) {
-        return categories[catId] || 'Unbekannt';
-    }
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                if (name.includes(filter) || provider.includes(filter)) {
+                    contract.style.display = '';
+                } else {
+                    contract.style.display = 'none';
+                }
+            });
+        }
+    </script>
 </body>
 </html>
