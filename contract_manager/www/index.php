@@ -81,13 +81,14 @@ $categories = [
 
 // Funktionen für die Statistiken
 function getContractsCount($db, $condition = '1=1') {
-    return $db->querySingle("SELECT COUNT(*) FROM contracts WHERE $condition");
+    $stmt = $db->prepare("SELECT COUNT(*) FROM contracts WHERE $condition");
+    $stmt->execute();
+    return $stmt->fetchColumn();
 }
 
 function getContracts($db, $condition = '1=1', $search = '') {
     $query = "SELECT * FROM contracts WHERE $condition";
     if (!empty($search)) {
-        // Sicherheit: Verwende PDO-Prepared Statements, um SQL-Injection zu verhindern
         $query .= " AND (name LIKE :search OR provider LIKE :search)";
     }
     $stmt = $db->prepare($query);
@@ -107,7 +108,7 @@ function getIngressPath($path) {
 
 // Funktion zum Formatieren des Datums
 function formatDate($date) {
-    if (!$date) return '';
+    if (!$date) return 'Unbekannt';
     return date('d.m.Y', strtotime($date));
 }
 
@@ -145,17 +146,9 @@ $activeCount = getContractsCount($db, "canceled = 0 AND (end_date IS NULL OR end
 $canceledCount = getContractsCount($db, "canceled = 1");
 
 // 4. Summierte Kosten aller aktiven Verträge (z. B. Grundkosten)
-$sumCostsQuery = $db->querySingle("
-    SELECT SUM(cost) 
-    FROM contracts 
-    WHERE canceled = 0 
-      AND (end_date IS NULL OR end_date > date('now'))
-");
-$totalCosts = $sumCostsQuery ? round($sumCostsQuery, 2) : 0.0;
-
-// 6. Kosten im Monat und im Jahr berechnen
-$totalMonthlyCosts = $totalCosts;
-$totalYearlyCosts = round($totalMonthlyCosts * 12, 2);
+$sumCostsQuery = $db->query("SELECT SUM(cost) FROM contracts WHERE canceled = 0 AND (end_date IS NULL OR end_date > date('now'))");
+$sumCostsResult = $sumCostsQuery->fetchColumn();
+$totalCosts = $sumCostsResult ? round($sumCostsResult, 2) : 0.0;
 
 // 5. Kosten nach Kategorie, um ein Diagramm zu erstellen (Beispiel)
 $costsPerCategoryQuery = $db->query("
@@ -166,7 +159,7 @@ $costsPerCategoryQuery = $db->query("
 ");
 
 $costsPerCategory = [];
-while ($row = $costsPerCategoryQuery->fetchArray(SQLITE3_ASSOC)) {
+while ($row = $costsPerCategoryQuery->fetch(PDO::FETCH_ASSOC)) {
     $catId = $row['category_id'];
     if (isset($categories[$catId])) {
         $catName = $categories[$catId]['name'];
@@ -217,9 +210,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
     $start_date = $_POST['start_date'] ?: null;
     $end_date = $_POST['end_date'] ?: null;
     $contract_holder = trim($_POST['contract_holder']) ?: null;
-    $cancellation_period = intval($_POST['cancellation_period']) ?: null;
-    $duration = intval($_POST['duration']) ?: null;
-    $category_id = intval($_POST['category_id']) ?: null;
+    $cancellation_period = isset($_POST['cancellation_period']) && is_numeric($_POST['cancellation_period']) ? intval($_POST['cancellation_period']) : null;
+    $duration = isset($_POST['duration']) && is_numeric($_POST['duration']) ? intval($_POST['duration']) : null;
+    $category_id = isset($_POST['category_id']) && is_numeric($_POST['category_id']) ? intval($_POST['category_id']) : null;
 
     // Verzeichnisse definieren
     $icon_dir = __DIR__ . '/data/icons/';
@@ -243,7 +236,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
             $full_icon_path = $icon_dir . $icon_name; // Absoluter Pfad für die Speicherung
 
             if (!is_dir($icon_dir)) {
-                mkdir($icon_dir, 0777, true);
+                if (!mkdir($icon_dir, 0777, true)) {
+                    $errors[] = "Das Icon-Verzeichnis konnte nicht erstellt werden.";
+                }
             }
             if (!move_uploaded_file($_FILES['icon']['tmp_name'], $full_icon_path)) {
                 $errors[] = "Das Icon konnte nicht hochgeladen werden.";
@@ -264,7 +259,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
             $full_pdf_path = $pdf_dir . $pdf_name; // Absoluter Pfad für die Speicherung
 
             if (!is_dir($pdf_dir)) {
-                mkdir($pdf_dir, 0777, true);
+                if (!mkdir($pdf_dir, 0777, true)) {
+                    $errors[] = "Das PDF-Verzeichnis konnte nicht erstellt werden.";
+                }
             }
             if (!move_uploaded_file($_FILES['pdf']['tmp_name'], $full_pdf_path)) {
                 $errors[] = "Das PDF konnte nicht hochgeladen werden.";
@@ -596,77 +593,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
         </div>
     </div>
 
-    <!-- Bootstrap Modal für Vertragsdetails -->
-    <div class="modal fade" id="contractModal" tabindex="-1" aria-labelledby="contractModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 id="contractModalLabel" class="modal-title">
-                        <i class="fas fa-file-contract info-icon"></i> Vertragsdetails
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <!-- Details -->
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <h6><i class="fas fa-building"></i> Anbieter:</h6>
-                                <p id="modalProvider"></p>
-                            </div>
-                            <div class="mb-3">
-                                <h6><i class="fas fa-user"></i> Vertragsnehmer:</h6>
-                                <p id="modalHolder"></p>
-                            </div>
-                            <div class="mb-3">
-                                <h6><i class="fas fa-euro-sign"></i> Kosten:</h6>
-                                <p id="modalCost"></p>
-                            </div>
-                            <div class="mb-3">
-                                <h6><i class="fas fa-calendar-alt"></i> Start:</h6>
-                                <p id="modalStart"></p>
-                            </div>
-                            <div class="mb-3">
-                                <h6><i class="fas fa-calendar-alt"></i> Ende:</h6>
-                                <p id="modalEnd"></p>
-                            </div>
-                            <div class="mb-3">
-                                <h6><i class="fas fa-clock"></i> Laufzeit (Monate):</h6>
-                                <p id="modalDuration"></p>
-                            </div>
-                            <div class="mb-3">
-                                <h6><i class="fas fa-hourglass-start"></i> Kündigungsfrist (Monate):</h6>
-                                <p id="modalCancellation"></p>
-                            </div>
-                            <div class="mb-3">
-                                <h6><i class="fas fa-tags"></i> Kategorie:</h6>
-                                <p id="modalCategory"></p>
-                            </div>
-                        </div>
-                        <!-- PDF -->
-                        <div class="col-md-6">
-                            <h6><i class="fas fa-file-pdf"></i> Vertragsdokument:</h6>
-                            <div class="mt-2">
-                                <iframe id="modalPdf" src="" class="modal-pdf"></iframe>
-                            </div>
-                            <div class="mt-3">
-                                <a href="#" id="downloadPdf" class="btn btn-danger me-2" target="_blank">
-                                    <i class="fas fa-download"></i> PDF herunterladen
-                                </a>
-                                <a href="#" id="openPdf" class="btn btn-primary" target="_blank">
-                                    <i class="fas fa-external-link-alt"></i> PDF öffnen
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Bootstrap Modal für das Hinzufügen eines Vertrags -->
     <div class="modal fade" id="addContractModal" tabindex="-1" aria-labelledby="addContractModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -676,7 +602,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
                 </div>
                 <div class="modal-body">
-                    <form action="index.php?<?= htmlspecialchars($_SERVER['QUERY_STRING']) ?>" method="post" enctype="multipart/form-data" class="row g-3">
+                    <form action="index.php<?= !empty($_SERVER['QUERY_STRING']) ? '?' . htmlspecialchars($_SERVER['QUERY_STRING']) : '' ?>" method="post" enctype="multipart/form-data" class="row g-3">
                         <input type="hidden" name="add_contract" value="1">
                         <div class="col-md-6">
                             <label for="name" class="form-label">Name:</label>
@@ -712,7 +638,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
                         </div>
                         <div class="col-md-6">
                             <label for="category_id" class="form-label">Kategorie:</label>
-                            <select id="category_id" name="category_id" class="form-select">
+                            <select id="category_id" name="category_id" class="form-select" required>
                                 <?php foreach ($categories as $id => $cat): ?>
                                     <option value="<?= htmlspecialchars($id) ?>"><?= htmlspecialchars($cat['name']) ?></option>
                                 <?php endforeach; ?>
@@ -737,7 +663,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
     </div>
 
     <!-- Bootstrap Modal für Vertragsdetails -->
-    <!-- (Bleibt unverändert) -->
     <div class="modal fade" id="contractModal" tabindex="-1" aria-labelledby="contractModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content">
@@ -902,6 +827,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
             const filter = input.value.toLowerCase();
             const contracts = document.querySelectorAll('.contract-card-item');
 
+            let visibleCount = 0;
+
             contracts.forEach(function(contract) {
                 const card = contract.querySelector('.contract-card');
                 const name = card.querySelector('h5').textContent.toLowerCase();
@@ -909,27 +836,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
 
                 if (name.includes(filter) || provider.includes(filter)) {
                     contract.style.display = '';
+                    visibleCount++;
                 } else {
                     contract.style.display = 'none';
                 }
             });
 
-            // Aktualisiere die Anzahl der angezeigten Verträge
-            const visibleContracts = document.querySelectorAll('.contract-card-item').length;
-            const contractsContainer = document.getElementById('contractsContainer');
-            const overviewSection = document.querySelector('.card-body');
-
-            if (document.querySelectorAll('.contract-card-item:visible').length === 0) {
-                overviewSection.innerHTML = `
-                    <div class="text-center my-5">
-                        <p class="fs-5">Keine Verträge gefunden. <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#addContractModal">+ Vertrag hinzufügen</button></p>
-                    </div>
-                `;
+            // Anzeige anpassen, wenn keine Verträge sichtbar sind
+            if (visibleCount === 0) {
+                document.getElementById('contractsContainer').style.display = 'none';
+                document.getElementById('noContractsMessage').style.display = 'block';
             } else {
-                // Nur wieder die Vertragskarten anzeigen, wenn welche sichtbar sind
-                // Hier wird ein einfacher Reload der Seite empfohlen, da die Änderung dynamisch
-                // im DOM zu kompliziert sein kann. Alternativ kannst du AJAX verwenden.
-                // Für Einfachheit lasse ich es hier leer.
+                document.getElementById('contractsContainer').style.display = 'flex';
+                document.getElementById('noContractsMessage').style.display = 'none';
             }
         }
     </script>
