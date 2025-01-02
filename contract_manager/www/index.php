@@ -136,7 +136,6 @@ while ($row = $costsPerCategoryQuery->fetchArray(SQLITE3_ASSOC)) {
 $categoryLabels = json_encode(array_keys($costsPerCategory));
 $categoryCosts  = json_encode(array_values($costsPerCategory));
 ?>
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -183,12 +182,68 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
             padding-top: 70px;
             max-width: 1200px;
             margin: 0 auto;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* Statistik-Bereich links */
+        .statistics-section {
+            background-color: #ffffff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex: 1 1 250px;
+            min-width: 250px;
+        }
+        .statistics-section h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        .stat-card {
+            background: #f7f7f7;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .stat-card h3 {
+            margin: 0;
+            font-size: 2rem;
+            color: #007bff;
+        }
+        .stat-card p {
+            margin: 5px 0 0;
+            font-size: 1rem;
+            color: #555;
+        }
+
+        /* Diagramm */
+        .chart-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 30px 0;
+        }
+
+        /* Vertragskarten rechts */
+        .contracts-section {
+            flex: 3 1 700px;
+            min-width: 300px;
+        }
+        .contracts-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
         }
         .card-container {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
-            padding: 0 20px;
         }
         .contract-card {
             background-color: white;
@@ -199,7 +254,7 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
             position: relative;
             margin-bottom: 20px;
             border-left: 8px solid transparent;
-            cursor: pointer;
+            cursor: pointer; /* Hand-Cursor, wenn man über die Karte fährt */
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .contract-card:hover {
@@ -208,6 +263,7 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
         }
         .contract-card h5 {
             margin-bottom: 10px;
+            font-size: 1.2rem;
         }
         .contract-card img.icon {
             position: absolute;
@@ -231,9 +287,9 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
             border-left-color: #6c757d;
         }
 
-        /* Overlay (Vollbild) - (aus dem vorherigen Beispiel) */
+        /* Overlay (Vollbild) */
         .overlay {
-            display: none; 
+            display: none; /* Anfangs unsichtbar */
             position: fixed;
             top: 0;
             left: 0;
@@ -280,6 +336,15 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
             overflow-y: auto;
             box-sizing: border-box;
         }
+        .overlay-details h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+        .overlay-details p {
+            margin-bottom: 8px;
+            font-size: 1rem;
+            color: #333;
+        }
         .overlay-pdf {
             width: 60%;
             background-color: #f0f0f0;
@@ -310,43 +375,24 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
             background: #c82333;
         }
 
-        /* Statistik-Bereich */
-        .statistics-section {
-            background-color: #ffffff;
-            margin: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .statistics-section h2 {
-            margin-top: 0;
-        }
-        .stat-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-        .stat-card {
-            background: #f7f7f7;
-            border-radius: 6px;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .stat-card h3 {
-            margin: 0;
-            font-size: 2rem;
-        }
-        .stat-card p {
-            margin: 5px 0 0;
-            font-size: 1rem;
-            color: #555;
-        }
-        /* Responsive Charts */
-        .chart-container {
-            width: 100%;
-            max-width: 800px;
-            margin: 30px auto;
+        /* Responsive Anpassungen */
+        @media (max-width: 992px) {
+            .container {
+                flex-direction: column;
+            }
+            .statistics-section, .contracts-section {
+                min-width: 100%;
+            }
+            .overlay-content {
+                flex-direction: column;
+            }
+            .overlay-details, .overlay-pdf {
+                width: 100%;
+                height: 50%;
+            }
+            .overlay-pdf {
+                height: 50%;
+            }
         }
     </style>
 </head>
@@ -358,9 +404,7 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
 </div>
 
 <div class="container">
-    <h1 class="text-center">Vertragsübersicht</h1>
-
-    <!-- Statistik-Bereich -->
+    <!-- Statistik-Bereich links -->
     <div class="statistics-section">
         <h2>Statistiken</h2>
 
@@ -396,27 +440,32 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
         </div>
     </div>
 
-    <!-- Vertragskarten -->
-    <div class="card-container">
-        <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
-            <?php
-                // JSON für das JavaScript aufbereiten
-                $contractJson = htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8');
-            ?>
-            <div 
-                class="contract-card <?= getCardClass($row); ?>"
-                onclick="openOverlay('<?= $contractJson ?>')"
-            >
-                <?php if (!empty($row['icon_path'])): ?>
-                    <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
-                <?php endif; ?>
+    <!-- Vertragskarten rechts -->
+    <div class="contracts-section">
+        <h2>Vertragsübersicht</h2>
 
-                <!-- Kurze Infos direkt auf der Karte -->
-                <h5><?= htmlspecialchars($row['name']); ?></h5>
-                <p>Anbieter: <?= htmlspecialchars($row['provider']); ?></p>
-                <p>Kosten: <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
-            </div>
-        <?php endwhile; ?>
+        <!-- Vertragskarten -->
+        <div class="card-container">
+            <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
+                <?php
+                    // JSON für das JavaScript aufbereiten
+                    $contractJson = htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8');
+                ?>
+                <div 
+                    class="contract-card <?= getCardClass($row); ?>"
+                    onclick="openOverlay('<?= $contractJson ?>')"
+                >
+                    <?php if (!empty($row['icon_path'])): ?>
+                        <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
+                    <?php endif; ?>
+
+                    <!-- Kurze Infos direkt auf der Karte -->
+                    <h5><?= htmlspecialchars($row['name']); ?></h5>
+                    <p>Anbieter: <?= htmlspecialchars($row['provider']); ?></p>
+                    <p>Kosten: <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
+                </div>
+            <?php endwhile; ?>
+        </div>
     </div>
 </div>
 
@@ -443,35 +492,41 @@ window.addEventListener('DOMContentLoaded', function() {
     const catLabels = <?= $categoryLabels ?>; // ["Strom","Gas","Internet",...]
     const catCosts  = <?= $categoryCosts ?>;  // [120,50,20,...]
 
-    // Du kannst ein Balkendiagramm (bar) oder Tortendiagramm (pie/doughnut) wählen
+    // Farben für die Kategorien (mehr Farben hinzufügen, falls nötig)
+    const backgroundColors = [
+        '#007bff', '#28a745', '#dc3545', '#ffc107', '#6f42c1',
+        '#20c997', '#fd7e14', '#6610f2', '#6c757d', '#17a2b8',
+        '#e83e8c', '#fd7e14', '#20c997', '#6f42c1', '#dc3545',
+        '#007bff', '#28a745', '#ffc107', '#6c757d', '#17a2b8'
+    ];
+
     new Chart(ctx, {
-        type: 'bar',  // oder 'pie', 'doughnut' usw.
+        type: 'pie',  // Du kannst 'bar', 'pie', 'doughnut' usw. wählen
         data: {
             labels: catLabels,
             datasets: [{
                 label: 'Kosten je Kategorie (€)',
                 data: catCosts,
-                backgroundColor: [
-                    '#007bff', '#28a745', '#dc3545', '#ffc107', '#6f42c1',
-                    '#20c997', '#fd7e14', '#6610f2', '#6c757d', '#17a2b8',
-                    // ... zufällig oder fest definierte Farben
-                ],
+                backgroundColor: backgroundColors.slice(0, catLabels.length),
                 borderColor: '#fff',
                 borderWidth: 1
             }]
         },
         options: {
             maintainAspectRatio: false, // damit es auch bei weniger Platz gut aussieht
-            scales: {
-                y: {
-                    beginAtZero: true
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+                tooltip: {
+                    enabled: true,
                 }
             }
         }
     });
 });
 
-// Overlay-Funktionen (aus vorherigen Beispielen)
+// Overlay-Funktionen
 function openOverlay(contractString) {
     const contract = JSON.parse(contractString);
     const overlay = document.getElementById('contractOverlay');
@@ -485,7 +540,7 @@ function openOverlay(contractString) {
         <p><strong>Ende:</strong> ${formatDate(contract.end_date)}</p>
         <p><strong>Laufzeit (Monate):</strong> ${escapeHtml(contract.duration)}</p>
         <p><strong>Kündigungsfrist (Monate):</strong> ${escapeHtml(contract.cancellation_period)}</p>
-        <p><strong>Kategorie-ID:</strong> ${escapeHtml(contract.category_id)}</p>
+        <p><strong>Kategorie:</strong> ${getCategoryName(contract.category_id)}</p>
     `;
     document.getElementById('contractDetails').innerHTML = detailsHtml;
 
@@ -517,11 +572,19 @@ function escapeHtml(text) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+
 function formatDate(dateString) {
     if (!dateString) return '';
     const parts = dateString.split('-');
     if (parts.length !== 3) return dateString;
     return `${parts[2]}.${parts[1]}.${parts[0]}`;
+}
+
+// Funktion zur Umwandlung der Kategorie-ID in den Namen (clientseitig)
+const categories = <?= json_encode($categories); ?>;
+
+function getCategoryName(catId) {
+    return categories[catId] || 'Unbekannt';
 }
 </script>
 
