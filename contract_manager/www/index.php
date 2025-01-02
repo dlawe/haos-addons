@@ -1,11 +1,13 @@
 <?php
+// Fehleranzeige aktivieren (für die Entwicklung)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 // Verbindung zur Datenbank herstellen
 try {
-    $db = new PDO('sqlite:/data/contracts.db');
+    // Der Pfad zur SQLite-Datenbank sollte korrekt sein
+    $db = new PDO('sqlite:' . __DIR__ . '/data/contracts.db');
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (Exception $e) {
     die("Verbindung zur Datenbank fehlgeschlagen: " . $e->getMessage());
@@ -33,47 +35,9 @@ function ensureColumnExists($db, $table, $column, $definition) {
     }
 }
 
-// Definieren der getIngressPath-Funktion
-function getIngressPath($relativePath) {
-    // Wenn keine spezielle Logik benötigt wird, gib den relativen Pfad zurück
-    return $relativePath;
-}
+// Schema-Management: Sicherstellen, dass alle Tabellen und Spalten existieren
 
-// Sicherstellen, dass die Tabelle "contracts" existiert
-ensureTableExists($db, 'contracts', "
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    provider TEXT NOT NULL,
-    cost REAL NOT NULL,
-    start_date DATE,
-    end_date DATE,
-    contract_holder TEXT,
-    canceled BOOLEAN DEFAULT 0,
-    auto_renew BOOLEAN DEFAULT 1,
-    duration INTEGER,
-    cancellation_period INTEGER,
-    category_id INTEGER,
-    icon_path TEXT,
-    pdf_path TEXT,
-    FOREIGN KEY (category_id) REFERENCES categories(id)
-");
-
-// Sicherstellen, dass alle benötigten Spalten in "contracts" existieren
-$columns = [
-    'canceled' => 'BOOLEAN DEFAULT 0',
-    'auto_renew' => 'BOOLEAN DEFAULT 1',
-    'duration' => 'INTEGER',
-    'cancellation_period' => 'INTEGER',
-    'category_id' => 'INTEGER',
-    'icon_path' => 'TEXT',
-    'pdf_path' => 'TEXT',
-    'contract_holder' => 'TEXT'
-];
-foreach ($columns as $column => $definition) {
-    ensureColumnExists($db, 'contracts', $column, $definition);
-}
-
-// Sicherstellen, dass die Tabelle "categories" existiert
+// 1. Tabelle "categories" sicherstellen
 ensureTableExists($db, 'categories', "
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -82,7 +46,8 @@ ensureTableExists($db, 'categories', "
 
 // Sicherstellen, dass alle benötigten Spalten in "categories" existieren
 $categoryColumns = [
-    'color' => 'TEXT DEFAULT \'#007bff\''
+    'name' => 'TEXT NOT NULL',
+    'color' => "TEXT DEFAULT '#007bff'"
 ];
 foreach ($categoryColumns as $column => $definition) {
     ensureColumnExists($db, 'categories', $column, $definition);
@@ -116,6 +81,45 @@ if ($categoryCount == 0) {
     }
 }
 
+// 2. Tabelle "contracts" sicherstellen
+ensureTableExists($db, 'contracts', "
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    cost REAL NOT NULL,
+    start_date DATE,
+    end_date DATE,
+    contract_holder TEXT,
+    canceled BOOLEAN DEFAULT 0,
+    auto_renew BOOLEAN DEFAULT 1,
+    duration INTEGER,
+    cancellation_period INTEGER,
+    category_id INTEGER,
+    icon_path TEXT,
+    pdf_path TEXT,
+    FOREIGN KEY (category_id) REFERENCES categories(id)
+");
+
+// Sicherstellen, dass alle benötigten Spalten in "contracts" existieren
+$contractColumns = [
+    'name' => 'TEXT NOT NULL',
+    'provider' => 'TEXT NOT NULL',
+    'cost' => 'REAL NOT NULL',
+    'start_date' => 'DATE',
+    'end_date' => 'DATE',
+    'contract_holder' => 'TEXT',
+    'canceled' => 'BOOLEAN DEFAULT 0',
+    'auto_renew' => 'BOOLEAN DEFAULT 1',
+    'duration' => 'INTEGER',
+    'cancellation_period' => 'INTEGER',
+    'category_id' => 'INTEGER',
+    'icon_path' => 'TEXT',
+    'pdf_path' => 'TEXT'
+];
+foreach ($contractColumns as $column => $definition) {
+    ensureColumnExists($db, 'contracts', $column, $definition);
+}
+
 // Definieren der fehlenden Funktionen
 function getContracts($db, $where = '1=1') {
     $stmt = $db->prepare("SELECT * FROM contracts WHERE $where ORDER BY id DESC");
@@ -129,6 +133,11 @@ function getContractsCount($db, $where = '1=1') {
     return $stmt->fetchColumn();
 }
 
+// Funktion zur sicheren Ausgabe von HTML-Inhalten
+function h($string) {
+    return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
+}
+
 // Überprüfen, ob das Formular zum Hinzufügen eines Vertrags abgesendet wurde
 $addErrors = [];
 $addSuccess = false;
@@ -139,9 +148,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $start_date = $_POST['start_date'] ?: null;
     $end_date = $_POST['end_date'] ?: null;
     $contract_holder = trim($_POST['contract_holder']) ?: null;
-    $cancellation_period = intval($_POST['cancellation_period']) ?: null;
-    $duration = intval($_POST['duration']) ?: null;
-    $category_id = intval($_POST['category_id']) ?: null;
+    $cancellation_period = isset($_POST['cancellation_period']) && is_numeric($_POST['cancellation_period']) ? intval($_POST['cancellation_period']) : null;
+    $duration = isset($_POST['duration']) && is_numeric($_POST['duration']) ? intval($_POST['duration']) : null;
+    $category_id = isset($_POST['category_id']) && is_numeric($_POST['category_id']) ? intval($_POST['category_id']) : null;
 
     // Verzeichnisse definieren (Pfad muss für Web zugänglich sein)
     $icon_dir = __DIR__ . '/data/icons/';
@@ -170,7 +179,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             }
         }
     } else {
-        $addErrors[] = "Bitte ein gültiges Icon hochladen.";
+        // Optional: Kein Icon hochgeladen
+        // $addErrors[] = "Bitte ein gültiges Icon hochladen.";
     }
 
     // Hochladen des PDFs
@@ -191,7 +201,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             }
         }
     } else {
-        $addErrors[] = "Bitte ein gültiges PDF hochladen.";
+        // Optional: Kein PDF hochgeladen
+        // $addErrors[] = "Bitte ein gültiges PDF hochladen.";
     }
 
     // Überprüfen, ob Fehler vorliegen
@@ -230,16 +241,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 $editErrors = [];
 $editSuccess = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit') {
-    $id = intval($_POST['id']);
+    $id = isset($_POST['id']) && is_numeric($_POST['id']) ? intval($_POST['id']) : null;
     $name = trim($_POST['name']);
     $provider = trim($_POST['provider']);
     $cost = floatval($_POST['cost']);
     $start_date = $_POST['start_date'] ?: null;
     $end_date = $_POST['end_date'] ?: null;
     $contract_holder = trim($_POST['contract_holder']) ?: null;
-    $cancellation_period = intval($_POST['cancellation_period']) ?: null;
-    $duration = intval($_POST['duration']) ?: null;
-    $category_id = intval($_POST['category_id']) ?: null;
+    $cancellation_period = isset($_POST['cancellation_period']) && is_numeric($_POST['cancellation_period']) ? intval($_POST['cancellation_period']) : null;
+    $duration = isset($_POST['duration']) && is_numeric($_POST['duration']) ? intval($_POST['duration']) : null;
+    $category_id = isset($_POST['category_id']) && is_numeric($_POST['category_id']) ? intval($_POST['category_id']) : null;
     $canceled = isset($_POST['canceled']) ? 1 : 0;
     $auto_renew = isset($_POST['auto_renew']) ? 1 : 0;
 
@@ -291,7 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 
     // Überprüfen, ob Fehler vorliegen
-    if (empty($editErrors)) {
+    if (empty($editErrors) && $id !== null) {
         try {
             // Update der Vertragsdaten in der Datenbank
             $sql = "UPDATE contracts SET
@@ -306,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         duration = :duration,
                         cancellation_period = :cancellation_period,
                         category_id = :category_id";
-
+            
             if ($icon_path !== null) {
                 $sql .= ", icon_path = :icon_path";
             }
@@ -340,6 +351,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         } catch (Exception $e) {
             $editErrors[] = "Fehler beim Bearbeiten des Vertrags: " . $e->getMessage();
         }
+    } elseif ($id === null) {
+        $editErrors[] = "Ungültige Vertrags-ID.";
     }
 }
 
@@ -526,6 +539,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             width: 100%;
             max-width: 400px;
             margin: 0 auto;
+            height: 300px; /* Festgelegte Höhe für bessere Darstellung */
         }
 
         /* Anpassung des Modals */
@@ -569,6 +583,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             }
             .chart-container {
                 max-width: 100%;
+                height: 200px; /* Anpassung für kleinere Bildschirme */
             }
             .contract-card {
                 width: 100%;
@@ -617,21 +632,21 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                             <!-- Gesamtanzahl Verträge -->
                             <div class="col-6">
                                 <div class="stat-card">
-                                    <h3><?= htmlspecialchars($totalContracts) ?></h3>
+                                    <h3><?= h($totalContracts) ?></h3>
                                     <p>Gesamt-Verträge</p>
                                 </div>
                             </div>
                             <!-- Anzahl aktive Verträge -->
                             <div class="col-6">
                                 <div class="stat-card">
-                                    <h3><?= htmlspecialchars($activeCount) ?></h3>
+                                    <h3><?= h($activeCount) ?></h3>
                                     <p>Aktive Verträge</p>
                                 </div>
                             </div>
                             <!-- Anzahl gekündigte Verträge -->
                             <div class="col-6">
                                 <div class="stat-card">
-                                    <h3><?= htmlspecialchars($canceledCount) ?></h3>
+                                    <h3><?= h($canceledCount) ?></h3>
                                     <p>Gekündigte Verträge</p>
                                 </div>
                             </div>
@@ -676,10 +691,10 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                             <?php while ($row = $contracts->fetch(PDO::FETCH_ASSOC)): ?>
                                 <?php
                                     // JSON für das JavaScript aufbereiten
-                                    $contractJson = htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8');
+                                    $contractJson = h(json_encode($row));
                                     // Farbe basierend auf der Kategorie
                                     $categoryId = $row['category_id'];
-                                    $categoryColor = isset($categories[$categoryId]['color']) ? htmlspecialchars($categories[$categoryId]['color']) : '#000000'; // Fallback-Farbe
+                                    $categoryColor = isset($categories[$categoryId]['color']) ? h($categories[$categoryId]['color']) : '#000000'; // Fallback-Farbe
                                 ?>
                                 <div class="col contract-card-item">
                                     <div 
@@ -687,10 +702,10 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                                         data-contract='<?= $contractJson ?>' 
                                         style="border-left-color: <?= $categoryColor ?>;">
                                         <?php if (!empty($row['icon_path'])): ?>
-                                            <img src="<?= htmlspecialchars(getIngressPath($row['icon_path'])); ?>" alt="Icon" class="icon">
+                                            <img src="<?= h($row['icon_path']); ?>" alt="Icon" class="icon">
                                         <?php endif; ?>
-                                        <h5><?= htmlspecialchars($row['name']); ?></h5>
-                                        <p><strong>Anbieter:</strong> <?= htmlspecialchars($row['provider']); ?></p>
+                                        <h5><?= h($row['name']); ?></h5>
+                                        <p><strong>Anbieter:</strong> <?= h($row['provider']); ?></p>
                                         <p><strong>Kosten:</strong> <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
                                     </div>
                                 </div>
@@ -800,7 +815,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                         if (!empty($addErrors)) {
                             echo "<div class='alert alert-danger'><ul>";
                             foreach ($addErrors as $error) {
-                                echo "<li>" . htmlspecialchars($error) . "</li>";
+                                echo "<li>" . h($error) . "</li>";
                             }
                             echo "</ul></div>";
                         }
@@ -841,9 +856,9 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                         </div>
                         <div class="col-md-6">
                             <label for="add_category_id" class="form-label">Kategorie:</label>
-                            <select id="add_category_id" name="category_id" class="form-select">
+                            <select id="add_category_id" name="category_id" class="form-select" required>
                                 <?php foreach ($categoriesList as $category): ?>
-                                    <option value="<?= htmlspecialchars($category['id']) ?>"><?= htmlspecialchars($category['name']) ?></option>
+                                    <option value="<?= h($category['id']) ?>"><?= h($category['name']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -881,7 +896,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                         if (!empty($editErrors)) {
                             echo "<div class='alert alert-danger'><ul>";
                             foreach ($editErrors as $error) {
-                                echo "<li>" . htmlspecialchars($error) . "</li>";
+                                echo "<li>" . h($error) . "</li>";
                             }
                             echo "</ul></div>";
                         }
@@ -923,9 +938,9 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                         </div>
                         <div class="col-md-6">
                             <label for="edit_category_id" class="form-label">Kategorie:</label>
-                            <select id="edit_category_id" name="category_id" class="form-select">
+                            <select id="edit_category_id" name="category_id" class="form-select" required>
                                 <?php foreach ($categoriesList as $category): ?>
-                                    <option value="<?= htmlspecialchars($category['id']) ?>"><?= htmlspecialchars($category['name']) ?></option>
+                                    <option value="<?= h($category['id']) ?>"><?= h($category['name']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -1039,6 +1054,8 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     modalPdf.src = contract.pdf_path;
                     document.getElementById('downloadPdf').href = contract.pdf_path;
                     document.getElementById('openPdf').href = contract.pdf_path;
+                    document.getElementById('downloadPdf').classList.remove('disabled');
+                    document.getElementById('openPdf').classList.remove('disabled');
                 } else {
                     modalPdf.src = 'about:blank';
                     document.getElementById('downloadPdf').href = '#';
