@@ -8,14 +8,9 @@ function getContractsCount($db, $condition = '1=1') {
 }
 
 function getContracts($db, $condition = '1=1', $search = '') {
-    $query = "
-        SELECT c.*, cat.name AS category_name
-        FROM contracts c
-        LEFT JOIN categories cat ON c.category_id = cat.id
-        WHERE $condition
-    ";
+    $query = "SELECT * FROM contracts WHERE $condition";
     if (!empty($search)) {
-        $query .= " AND (c.name LIKE '%$search%' OR c.provider LIKE '%$search%')";
+        $query .= " AND (name LIKE '%$search%' OR provider LIKE '%$search%')";
     }
     return $db->query($query);
 }
@@ -46,12 +41,6 @@ function getCardClass($contract) {
 function getIngressPath($path) {
     $base_path = $_SERVER['HTTP_X_INGRESS_PATH'] ?? '';
     return htmlspecialchars($base_path . '/' . ltrim($path, '/'));
-}
-
-// Funktion zum Formatieren des Datums
-function formatDate($date) {
-    if (!$date) return '';
-    return date('d.m.Y', strtotime($date));
 }
 
 // Filter aus der URL verarbeiten
@@ -134,7 +123,7 @@ $contracts = getContracts($db, $condition, $search);
             right: 10px;
             width: 40px;
             height: 40px;
-            object-fit: contain;
+            object-fit: contain; /* Verhindert Verzerrung */
             max-width: 100%;
             max-height: 100%;
         }
@@ -166,6 +155,24 @@ $contracts = getContracts($db, $condition, $search);
     <div class="container">
         <h1 class="text-center">Vertragsübersicht</h1>
 
+        <!-- Kacheln -->
+        <div class="card-container">
+            <div class="card">
+                <a href="index.php?filter=active" class="btn btn-primary d-block mb-2">
+                    Aktive Verträge: <?= getContractsCount($db, "canceled = 0 AND (end_date IS NULL OR end_date > date('now'))"); ?>
+                </a>
+                <a href="index.php?filter=longterm" class="btn btn-success d-block mb-2">
+                    Langzeitverträge: <?= getContractsCount($db, "duration >= 12"); ?>
+                </a>
+                <a href="index.php?filter=monthly" class="btn btn-warning d-block mb-2">
+                    Monatsverträge: <?= getContractsCount($db, "duration = 1"); ?>
+                </a>
+                <a href="index.php?filter=expiring" class="btn btn-danger d-block mb-2">
+                    Ablaufende Verträge: <?= getContractsCount($db, "canceled = 0 AND end_date BETWEEN date('now') AND date('now', '+30 days') AND cancellation_date < date('now', '+30 days')"); ?>
+                </a>
+            </div>
+        </div>
+
         <!-- Vertragskarten -->
         <div class="card-container">
             <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
@@ -176,16 +183,14 @@ $contracts = getContracts($db, $condition, $search);
                     <?php endif; ?>
 
                     <h5><?= htmlspecialchars($row['name']); ?></h5>
-                    <p class="provider">Anbieter: <?= htmlspecialchars($row['provider']); ?></p>
-                    <p>Vertragsnehmer: <?= htmlspecialchars($row['contract_holder']); ?></p>
-					<p class="cost">Kosten: <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
-                    <p class="dates">
-                        Start: <?= formatDate($row['start_date']); ?><br>
-                        Ende: <?= formatDate($row['end_date']); ?>
+                    <p class="provider"><?= htmlspecialchars($row['provider']); ?></p>
+                    <p class="cost">
+                        <?= number_format($row['cost'], 2, ',', '.'); ?> €
                     </p>
-                    <p>Laufzeit: <?= htmlspecialchars($row['duration']); ?> Monate</p>
-                    <p>Kündigungsfrist: <?= htmlspecialchars($row['cancellation_period']); ?> Monate</p>
-                    <p>Kategorie: <?= htmlspecialchars($row['category_name'] ?? 'Unbekannt'); ?></p>
+                    <p class="dates">
+                        Start: <?= htmlspecialchars($row['start_date']); ?><br>
+                        Ende: <?= htmlspecialchars($row['end_date']); ?>
+                    </p>
 
                     <!-- PDF Icon unten rechts -->
                     <?php if (!empty($row['pdf_path'])): ?>
