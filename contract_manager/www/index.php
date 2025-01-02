@@ -33,6 +33,12 @@ function ensureColumnExists($db, $table, $column, $definition) {
     }
 }
 
+// Definieren der getIngressPath-Funktion
+function getIngressPath($relativePath) {
+    // Wenn keine spezielle Logik benötigt wird, gib den relativen Pfad zurück
+    return $relativePath;
+}
+
 // Sicherstellen, dass die Tabelle "contracts" existiert
 ensureTableExists($db, 'contracts', "
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,7 +58,7 @@ ensureTableExists($db, 'contracts', "
     FOREIGN KEY (category_id) REFERENCES categories(id)
 ");
 
-// Sicherstellen, dass alle benötigten Spalten existieren
+// Sicherstellen, dass alle benötigten Spalten in "contracts" existieren
 $columns = [
     'canceled' => 'BOOLEAN DEFAULT 0',
     'auto_renew' => 'BOOLEAN DEFAULT 1',
@@ -65,6 +71,49 @@ $columns = [
 ];
 foreach ($columns as $column => $definition) {
     ensureColumnExists($db, 'contracts', $column, $definition);
+}
+
+// Sicherstellen, dass die Tabelle "categories" existiert
+ensureTableExists($db, 'categories', "
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    color TEXT DEFAULT '#007bff'
+");
+
+// Sicherstellen, dass alle benötigten Spalten in "categories" existieren
+$categoryColumns = [
+    'color' => 'TEXT DEFAULT \'#007bff\''
+];
+foreach ($categoryColumns as $column => $definition) {
+    ensureColumnExists($db, 'categories', $column, $definition);
+}
+
+// Optional: Standardkategorien einfügen, falls die Tabelle leer ist
+$checkCategories = $db->query("SELECT COUNT(*) FROM categories");
+$categoryCount = $checkCategories->fetchColumn();
+
+if ($categoryCount == 0) {
+    $defaultCategories = [
+        ['name' => 'Strom', 'color' => '#007bff'],
+        ['name' => 'Gas', 'color' => '#28a745'],
+        ['name' => 'Internet', 'color' => '#ffc107'],
+        ['name' => 'Mobilfunk', 'color' => '#dc3545'],
+        ['name' => 'Versicherung', 'color' => '#17a2b8'],
+        ['name' => 'Streaming', 'color' => '#6f42c1'],
+        ['name' => 'Fitnessstudio', 'color' => '#fd7e14'],
+        ['name' => 'Zeitschriften', 'color' => '#20c997'],
+        ['name' => 'Miete', 'color' => '#6610f2'],
+        ['name' => 'Sonstiges', 'color' => '#e83e8c'],
+        // Füge weitere Kategorien nach Bedarf hinzu
+    ];
+
+    $stmt = $db->prepare("INSERT INTO categories (name, color) VALUES (:name, :color)");
+    foreach ($defaultCategories as $cat) {
+        $stmt->execute([
+            ':name' => $cat['name'],
+            ':color' => $cat['color']
+        ]);
+    }
 }
 
 // Definieren der fehlenden Funktionen
@@ -295,16 +344,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // Kategorien für das Formular laden (dynamisch aus der Datenbank)
-$categoriesQuery = $db->query("SELECT id, name FROM categories ORDER BY name ASC");
+$categoriesQuery = $db->query("SELECT id, name, color FROM categories ORDER BY name ASC");
 $categoriesList = [];
 $categories = []; // Neues Array für den schnellen Zugriff
-$defaultColor = '#007bff'; // Standardfarbe für alle Kategorien
 
 while ($row = $categoriesQuery->fetch(PDO::FETCH_ASSOC)) {
     $categoriesList[] = $row;
     $categories[$row['id']] = [
         'name' => $row['name'],
-        'color' => $defaultColor // Verwende die Standardfarbe
+        'color' => $row['color']
     ];
 }
 
@@ -325,13 +373,9 @@ $activeCount = getContractsCount($db, "canceled = 0 AND (end_date IS NULL OR end
 $canceledCount = getContractsCount($db, "canceled = 1");
 
 // 4. Summierte Kosten aller aktiven Verträge (z. B. Grundkosten)
-$sumCostsQuery = $db->querySingle("
-    SELECT SUM(cost) 
-    FROM contracts 
-    WHERE canceled = 0 
-      AND (end_date IS NULL OR end_date > date('now'))
-");
-$totalCosts = $sumCostsQuery ? round($sumCostsQuery, 2) : 0.0;
+$sumCostsQuery = $db->query("SELECT SUM(cost) FROM contracts WHERE canceled = 0 AND (end_date IS NULL OR end_date > date('now'))");
+$sumCostsResult = $sumCostsQuery->fetch(PDO::FETCH_NUM);
+$totalCosts = $sumCostsResult[0] ? round($sumCostsResult[0], 2) : 0.0;
 
 // 6. Kosten im Monat und im Jahr berechnen
 $totalMonthlyCosts = $totalCosts;
@@ -643,7 +687,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                                         data-contract='<?= $contractJson ?>' 
                                         style="border-left-color: <?= $categoryColor ?>;">
                                         <?php if (!empty($row['icon_path'])): ?>
-                                            <img src="<?= htmlspecialchars($row['icon_path']); ?>" alt="Icon" class="icon">
+                                            <img src="<?= htmlspecialchars(getIngressPath($row['icon_path'])); ?>" alt="Icon" class="icon">
                                         <?php endif; ?>
                                         <h5><?= htmlspecialchars($row['name']); ?></h5>
                                         <p><strong>Anbieter:</strong> <?= htmlspecialchars($row['provider']); ?></p>
