@@ -43,6 +43,12 @@ function getIngressPath($path) {
     return htmlspecialchars($base_path . '/' . ltrim($path, '/'));
 }
 
+// Funktion zum Formatieren des Datums
+function formatDate($date) {
+    if (!$date) return '';
+    return date('d. F Y', strtotime($date));
+}
+
 // Filter aus der URL verarbeiten
 $filter = $_GET['filter'] ?? 'all';
 $search = $_GET['search'] ?? '';
@@ -168,8 +174,8 @@ $contracts = getContracts($db, $condition, $search);
                     <p class="provider">Anbieter: <?= htmlspecialchars($row['provider']); ?></p>
                     <p class="cost">Kosten: <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
                     <p class="dates">
-                        Start: <?= htmlspecialchars($row['start_date']); ?><br>
-                        Ende: <?= htmlspecialchars($row['end_date']); ?>
+                        Start: <?= formatDate($row['start_date']); ?><br>
+                        Ende: <?= formatDate($row['end_date']); ?>
                     </p>
                     <p>Vertragsnehmer: <?= htmlspecialchars($row['contract_holder']); ?></p>
                     <p>Laufzeit: <?= htmlspecialchars($row['duration']); ?> Monate</p>
