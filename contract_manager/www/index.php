@@ -41,6 +41,16 @@ function getContracts($db, $condition = '1=1', $search = '') {
     return $db->query($query);
 }
 
+// Neue Funktion zur Ermittlung bald ablaufender Verträge (innerhalb von 30 Tagen)
+function getExpiringContractsCount($db) {
+    return $db->querySingle("
+        SELECT COUNT(*) 
+        FROM contracts 
+        WHERE canceled = 0 
+          AND end_date BETWEEN date('now') AND date('now', '+30 days')
+    ");
+}
+
 // Funktion zur Anpassung der Pfade für Ingress
 function getIngressPath($path) {
     $base_path = $_SERVER['HTTP_X_INGRESS_PATH'] ?? '';
@@ -95,9 +105,12 @@ $sumCostsQuery = $db->querySingle("
 ");
 $totalCosts = $sumCostsQuery ? round($sumCostsQuery, 2) : 0.0;
 
-// 6. Kosten im Monat und im Jahr berechnen
+// 5. Kosten im Monat und im Jahr berechnen
 $totalMonthlyCosts = $totalCosts;
 $totalYearlyCosts = round($totalMonthlyCosts * 12, 2);
+
+// 6. Anzahl der bald ablaufenden Verträge
+$expiringContractsCount = getExpiringContractsCount($db);
 
 // Zusätzlich: Zähle die Anzahl der gefilterten Verträge für die Anzeige
 $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ? " AND (name LIKE '%" . SQLite3::escapeString($search) . "%' OR provider LIKE '%" . SQLite3::escapeString($search) . "%')" : ""));
@@ -175,6 +188,9 @@ $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ?
             margin-bottom: 10px;
             font-size: 1.2rem;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         .contract-card p {
             margin: 5px 0;
@@ -222,8 +238,19 @@ $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ?
             background-color: #f8f9fa;
         }
 
+        /* Suchleiste */
+        .search-bar {
+            margin-bottom: 20px;
+        }
+
         /* Responsive Anpassungen */
         @media (max-width: 768px) {
+            .stat-content {
+                flex-direction: column;
+            }
+            .chart-container {
+                max-width: 100%;
+            }
             .contract-card {
                 width: 100%;
             }
@@ -309,6 +336,13 @@ $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ?
                             <p>Kosten im Jahr</p>
                         </div>
                     </div>
+                    <!-- Anzahl bald ablaufender Verträge -->
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                        <div class="stat-card">
+                            <h3><?= $expiringContractsCount ?></h3>
+                            <p>Bald ablaufende Verträge (30 Tage)</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -337,7 +371,10 @@ $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ?
                                             <?php if (!empty($row['icon_path'])): ?>
                                                 <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
                                             <?php endif; ?>
-                                            <h5><?= htmlspecialchars($row['name']); ?></h5>
+                                            <h5><?= htmlspecialchars($row['name']); ?>
+                                                <!-- Badge für bald ablaufende Kündigungsfrist -->
+                                                <span class="badge bg-warning text-dark d-none" id="badge-<?= htmlspecialchars($row['id']); ?>">Ablauf in ≤30 Tagen</span>
+                                            </h5>
                                             <p><strong>Anbieter:</strong> <?= htmlspecialchars($row['provider']); ?></p>
                                             <p><strong>Kosten:</strong> <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
                                         </div>
@@ -472,6 +509,23 @@ $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ?
                 // Öffnen des Modals
                 contractModal.show();
             });
+
+            // Zusätzliche Logik zur Anzeige des Badges für bald ablaufende Kündigungsfristen
+            const contract = JSON.parse(card.getAttribute('data-contract'));
+            if (contract.end_date) {
+                const endDate = new Date(contract.end_date);
+                const today = new Date();
+                const timeDiff = endDate - today;
+                const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+                if (daysLeft <= 30 && daysLeft >= 0) {
+                    // Zeige das Badge
+                    const badge = card.querySelector('.badge');
+                    if (badge) {
+                        badge.classList.remove('d-none');
+                    }
+                }
+            }
         });
 
         // Hilfsfunktionen
