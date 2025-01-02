@@ -472,7 +472,7 @@ $categoryChartColors = json_encode($chartColors);
                 <div 
                     class="contract-card"
                     onclick="openOverlay('<?= $contractJson ?>')"
-                    style="border-left-color: <?= $categoryColor ?>;" <!-- Setze die Farbe der linken Kante -->
+                    style="border-left-color: <?= $categoryColor ?>;" 
                 >
                     <?php if (!empty($row['icon_path'])): ?>
                         <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
