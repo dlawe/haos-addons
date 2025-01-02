@@ -2,6 +2,30 @@
 // Verbindung zur SQLite-Datenbank herstellen
 $db = new SQLite3('/data/contracts.db');
 
+// Kategorien als assoziatives Array (ID => Kategoriename)
+$categories = [
+    1  => 'Strom',
+    2  => 'Gas',
+    3  => 'Internet',
+    4  => 'Mobilfunk',
+    5  => 'Versicherung',
+    6  => 'Streaming',
+    7  => 'Fitnessstudio',
+    8  => 'Zeitschriften',
+    9  => 'Miete',
+    10 => 'Sonstiges',
+    11 => 'Wartungsverträge',
+    12 => 'Cloud-Dienste',
+    13 => 'Software-Abonnements',
+    14 => 'Mitgliedschaften',
+    15 => 'Autoversicherung',
+    16 => 'Rechtsschutz',
+    17 => 'Hausrat',
+    18 => 'Reiseversicherungen',
+    19 => 'Bausparen',
+    20 => 'Kreditverträge'
+];
+
 // Funktionen für die Statistiken
 function getContractsCount($db, $condition = '1=1') {
     return $db->querySingle("SELECT COUNT(*) FROM contracts WHERE $condition");
@@ -173,14 +197,23 @@ $contracts = getContracts($db, $condition, $search);
                     <h5><?= htmlspecialchars($row['name']); ?></h5>
                     <p class="provider">Anbieter: <?= htmlspecialchars($row['provider']); ?></p>
                     <p>Vertragsnehmer: <?= htmlspecialchars($row['contract_holder']); ?></p>
-					<p class="cost">Kosten: <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
+                    <p class="cost">Kosten: <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
                     <p class="dates">
                         Start: <?= formatDate($row['start_date']); ?><br>
                         Ende: <?= formatDate($row['end_date']); ?>
                     </p>
                     <p>Laufzeit: <?= htmlspecialchars($row['duration']); ?> Monate</p>
                     <p>Kündigungsfrist: <?= htmlspecialchars($row['cancellation_period']); ?> Monate</p>
-                    <p>Kategorie-ID: <?= htmlspecialchars($row['category_id']); ?></p>
+
+                    <!-- Kategorie ausgeben statt ID -->
+                    <p>Kategorie: 
+                        <?php
+                        $catId = $row['category_id'];
+                        echo isset($categories[$catId])
+                            ? htmlspecialchars($categories[$catId])
+                            : 'Unbekannte Kategorie';
+                        ?>
+                    </p>
 
                     <!-- PDF Icon unten rechts -->
                     <?php if (!empty($row['pdf_path'])): ?>
