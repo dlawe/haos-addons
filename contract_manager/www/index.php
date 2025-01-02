@@ -34,7 +34,7 @@ function getContractsCount($db, $condition = '1=1') {
 function getContracts($db, $condition = '1=1', $search = '') {
     $query = "SELECT * FROM contracts WHERE $condition";
     if (!empty($search)) {
-        // Hier besser auf Prepared Statements setzen, um SQL-Injection vorzubeugen
+        // Sicherheit: Verwende SQLite3::escapeString, um SQL-Injection zu verhindern
         $searchEscaped = SQLite3::escapeString($search);
         $query .= " AND (name LIKE '%$searchEscaped%' OR provider LIKE '%$searchEscaped%')";
     }
@@ -195,16 +195,28 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             flex: 1 1 250px;
             min-width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
         .statistics-section h2 {
             margin-top: 0;
             font-size: 1.5rem;
             margin-bottom: 20px;
         }
+
+        /* Inneres Layout der Statistik-Sektion */
+        .stat-content {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        /* Numerische Statistiken */
         .stat-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             gap: 15px;
+            flex: 1;
         }
         .stat-card {
             background: #f7f7f7;
@@ -227,8 +239,8 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
         /* Diagramm */
         .chart-container {
             width: 100%;
-            max-width: 100%;
-            margin: 30px 0;
+            max-width: 300px;
+            margin: 0 auto;
         }
 
         /* Vertragskarten rechts */
@@ -393,6 +405,13 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
             .overlay-pdf {
                 height: 50%;
             }
+            /* Statistik-Innenlayout anpassen */
+            .stat-content {
+                flex-direction: column;
+            }
+            .chart-container {
+                max-width: 100%;
+            }
         }
     </style>
 </head>
@@ -408,35 +427,39 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
     <div class="statistics-section">
         <h2>Statistiken</h2>
 
-        <div class="stat-grid">
-            <!-- Gesamtanzahl Verträge -->
-            <div class="stat-card">
-                <h3><?= $totalContracts ?></h3>
-                <p>Gesamt-Verträge</p>
+        <!-- Inneres Layout: Numerische Statistiken und Diagramm nebeneinander -->
+        <div class="stat-content">
+            <!-- Numerische Statistiken -->
+            <div class="stat-grid">
+                <!-- Gesamtanzahl Verträge -->
+                <div class="stat-card">
+                    <h3><?= $totalContracts ?></h3>
+                    <p>Gesamt-Verträge</p>
+                </div>
+
+                <!-- Anzahl aktive Verträge -->
+                <div class="stat-card">
+                    <h3><?= $activeCount ?></h3>
+                    <p>Aktive Verträge</p>
+                </div>
+
+                <!-- Anzahl gekündigte Verträge -->
+                <div class="stat-card">
+                    <h3><?= $canceledCount ?></h3>
+                    <p>Gekündigte Verträge</p>
+                </div>
+
+                <!-- Summierte Kosten aller aktiven Verträge -->
+                <div class="stat-card">
+                    <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
+                    <p>Gesamtkosten (aktiv)</p>
+                </div>
             </div>
 
-            <!-- Anzahl aktive Verträge -->
-            <div class="stat-card">
-                <h3><?= $activeCount ?></h3>
-                <p>Aktive Verträge</p>
+            <!-- Diagramm rechts neben den numerischen Statistiken -->
+            <div class="chart-container">
+                <canvas id="costChart"></canvas>
             </div>
-
-            <!-- Anzahl gekündigte Verträge -->
-            <div class="stat-card">
-                <h3><?= $canceledCount ?></h3>
-                <p>Gekündigte Verträge</p>
-            </div>
-
-            <!-- Summierte Kosten aller aktiven Verträge -->
-            <div class="stat-card">
-                <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
-                <p>Gesamtkosten (aktiv)</p>
-            </div>
-        </div>
-
-        <!-- Kleines Balken- oder Tortendiagramm (Chart.js) -->
-        <div class="chart-container">
-            <canvas id="costChart"></canvas>
         </div>
     </div>
 
