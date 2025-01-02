@@ -37,6 +37,51 @@ ensureTableExists($db, 'contracts', "
     FOREIGN KEY (category_id) REFERENCES categories(id)
 ");
 
+// Sicherstellen, dass die Tabelle "categories" existiert
+ensureTableExists($db, 'categories', "
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL
+");
+
+// Kategorien in die Tabelle einfügen, falls sie leer ist
+function initializeCategories($db) {
+    $result = $db->query("SELECT COUNT(*) AS count FROM categories");
+    $row = $result->fetch(PDO::FETCH_ASSOC);
+    if ($row['count'] == 0) {
+        $categories = [
+            [1, 'Strom'],
+            [2, 'Gas'],
+            [3, 'Internet'],
+            [4, 'Mobilfunk'],
+            [5, 'Versicherung'],
+            [6, 'Streaming'],
+            [7, 'Fitnessstudio'],
+            [8, 'Zeitschriften'],
+            [9, 'Miete'],
+            [10, 'Sonstiges'],
+            [11, 'Wartungsverträge'],
+            [12, 'Cloud-Dienste'],
+            [13, 'Software-Abonnements'],
+            [14, 'Mitgliedschaften'],
+            [15, 'Autoversicherung'],
+            [16, 'Rechtsschutz'],
+            [17, 'Hausrat'],
+            [18, 'Reiseversicherungen'],
+            [19, 'Bausparen'],
+            [20, 'Kreditverträge']
+        ];
+
+        $stmt = $db->prepare("INSERT INTO categories (id, name) VALUES (?, ?)");
+        foreach ($categories as $category) {
+            $stmt->execute($category);
+        }
+        echo "Kategorien wurden initialisiert.<br>";
+    }
+}
+
+// Kategorien initialisieren
+initializeCategories($db);
+
 // Sicherstellen, dass alle benötigten Spalten existieren
 $columns = [
     'canceled' => 'BOOLEAN DEFAULT 0',
@@ -117,7 +162,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "Bitte ein gültiges PDF hochladen.";
     }
 
-
     // Überprüfen, ob Fehler vorliegen
     if (empty($errors)) {
         // Daten in die Datenbank einfügen
@@ -140,7 +184,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-
 ?>
 
 <!DOCTYPE html>
