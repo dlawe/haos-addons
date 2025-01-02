@@ -26,28 +26,28 @@ $categories = [
     20 => 'Kreditverträge'
 ];
 
-// Kategorienfarben als assoziatives Array (ID => Farbe)
+// Farbzuordnung für Kategorien (ID => Farbe)
 $categoryColors = [
-    1  => '#007bff', // Strom - Blau
-    2  => '#28a745', // Gas - Grün
-    3  => '#dc3545', // Internet - Rot
-    4  => '#ffc107', // Mobilfunk - Gelb
-    5  => '#6f42c1', // Versicherung - Lila
-    6  => '#20c997', // Streaming - Türkis
-    7  => '#fd7e14', // Fitnessstudio - Orange
-    8  => '#6610f2', // Zeitschriften - Violett
-    9  => '#6c757d', // Miete - Grau
-    10 => '#17a2b8', // Sonstiges - Cyan
-    11 => '#e83e8c', // Wartungsverträge - Pink
-    12 => '#fd7e14', // Cloud-Dienste - Orange
-    13 => '#20c997', // Software-Abonnements - Türkis
-    14 => '#6f42c1', // Mitgliedschaften - Lila
-    15 => '#dc3545', // Autoversicherung - Rot
-    16 => '#007bff', // Rechtsschutz - Blau
-    17 => '#28a745', // Hausrat - Grün
-    18 => '#ffc107', // Reiseversicherungen - Gelb
-    19 => '#6c757d', // Bausparen - Grau
-    20 => '#17a2b8'  // Kreditverträge - Cyan
+    1  => '#007bff', // Strom
+    2  => '#28a745', // Gas
+    3  => '#dc3545', // Internet
+    4  => '#ffc107', // Mobilfunk
+    5  => '#6f42c1', // Versicherung
+    6  => '#20c997', // Streaming
+    7  => '#fd7e14', // Fitnessstudio
+    8  => '#6610f2', // Zeitschriften
+    9  => '#6c757d', // Miete
+    10 => '#17a2b8', // Sonstiges
+    11 => '#e83e8c', // Wartungsverträge
+    12 => '#fd7e14', // Cloud-Dienste
+    13 => '#20c997', // Software-Abonnements
+    14 => '#6f42c1', // Mitgliedschaften
+    15 => '#dc3545', // Autoversicherung
+    16 => '#007bff', // Rechtsschutz
+    17 => '#28a745', // Hausrat
+    18 => '#ffc107', // Reiseversicherungen
+    19 => '#6c757d', // Bausparen
+    20 => '#17a2b8'  // Kreditverträge
 ];
 
 // Funktionen für die Statistiken
@@ -137,7 +137,6 @@ while ($row = $costsPerCategoryQuery->fetchArray(SQLITE3_ASSOC)) {
 // Daraus ein JSON bauen für JavaScript (Diagramm)
 $categoryLabels = json_encode(array_keys($costsPerCategory));
 $categoryCosts  = json_encode(array_values($costsPerCategory));
-$categoryColorsJs = json_encode(array_values($categoryColors)); // Für Chart.js
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -213,7 +212,6 @@ $categoryColorsJs = json_encode(array_values($categoryColors)); // Für Chart.js
             display: flex;
             gap: 20px;
             flex-wrap: wrap;
-            align-items: flex-start;
         }
         /* Numerische Statistiken */
         .stat-grid {
@@ -269,7 +267,7 @@ $categoryColorsJs = json_encode(array_values($categoryColors)); // Für Chart.js
             padding: 15px;
             position: relative;
             margin-bottom: 20px;
-            border-left: 8px solid transparent;
+            border-left: 8px solid transparent; /* Farbe wird inline gesetzt */
             cursor: pointer; /* Hand-Cursor, wenn man über die Karte fährt */
             transition: transform 0.2s, box-shadow 0.2s;
         }
@@ -291,9 +289,6 @@ $categoryColorsJs = json_encode(array_values($categoryColors)); // Für Chart.js
             max-width: 100%;
             max-height: 100%;
         }
-
-        /* Farbliche Kennzeichnungen basierend auf Kategorie */
-        /* Die Border-Farbe wird inline gesetzt, daher keine zusätzlichen CSS-Klassen erforderlich */
 
         /* Overlay (Vollbild) */
         .overlay {
@@ -469,13 +464,14 @@ $categoryColorsJs = json_encode(array_values($categoryColors)); // Für Chart.js
                 <?php
                     // JSON für das JavaScript aufbereiten
                     $contractJson = htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8');
-                    // Kategorie-Farbe abrufen
-                    $categoryColor = isset($categoryColors[$row['category_id']]) ? $categoryColors[$row['category_id']] : '#000000';
+                    // Farbe basierend auf der Kategorie
+                    $categoryId = $row['category_id'];
+                    $categoryColor = isset($categoryColors[$categoryId]) ? $categoryColors[$categoryId] : '#000000'; // Fallback-Farbe
                 ?>
                 <div 
                     class="contract-card"
-                    style="border-left-color: <?= $categoryColor ?>;"
                     onclick="openOverlay('<?= $contractJson ?>')"
+                    style="border-left-color: <?= $categoryColor ?>;"
                 >
                     <?php if (!empty($row['icon_path'])): ?>
                         <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
@@ -513,7 +509,9 @@ window.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('costChart').getContext('2d');
     const catLabels = <?= $categoryLabels ?>; // ["Strom","Gas","Internet",...]
     const catCosts  = <?= $categoryCosts ?>;  // [120,50,20,...]
-    const categoryColors = <?= $categoryColorsJs ?>; // ["#007bff", "#28a745", ...]
+
+    // Farben für die Kategorien aus PHP übertragen
+    const backgroundColors = <?= json_encode(array_values($categoryColors)); ?>;
 
     new Chart(ctx, {
         type: 'pie',  // Du kannst 'bar', 'pie', 'doughnut' usw. wählen
@@ -522,7 +520,7 @@ window.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Kosten je Kategorie (€)',
                 data: catCosts,
-                backgroundColor: categoryColors.slice(0, catLabels.length),
+                backgroundColor: backgroundColors.slice(0, catLabels.length),
                 borderColor: '#fff',
                 borderWidth: 1
             }]
@@ -546,10 +544,6 @@ function openOverlay(contractString) {
     const contract = JSON.parse(contractString);
     const overlay = document.getElementById('contractOverlay');
 
-    // Kategorie-Name und Farbe abrufen
-    const categoryName = getCategoryName(contract.category_id);
-    const categoryColor = categoriesColors[contract.category_id] || '#000000';
-
     let detailsHtml = `
         <h2>${escapeHtml(contract.name)}</h2>
         <p><strong>Anbieter:</strong> ${escapeHtml(contract.provider)}</p>
@@ -559,7 +553,7 @@ function openOverlay(contractString) {
         <p><strong>Ende:</strong> ${formatDate(contract.end_date)}</p>
         <p><strong>Laufzeit (Monate):</strong> ${escapeHtml(contract.duration)}</p>
         <p><strong>Kündigungsfrist (Monate):</strong> ${escapeHtml(contract.cancellation_period)}</p>
-        <p><strong>Kategorie:</strong> <span style="color: ${categoryColor};">${escapeHtml(categoryName)}</span></p>
+        <p><strong>Kategorie:</strong> ${getCategoryName(contract.category_id)}</p>
     `;
     document.getElementById('contractDetails').innerHTML = detailsHtml;
 
@@ -601,17 +595,9 @@ function formatDate(dateString) {
 
 // Funktion zur Umwandlung der Kategorie-ID in den Namen (clientseitig)
 const categories = <?= json_encode($categories); ?>;
-const categoriesColors = <?= $categoryColorsJs ?>;
-
-// Mapping der Kategorie-IDs zu Farben
-const categoryColorMap = <?= json_encode($categoryColors) ?>;
 
 function getCategoryName(catId) {
     return categories[catId] || 'Unbekannt';
-}
-
-function getCategoryColor(catId) {
-    return categoryColorMap[catId] || '#000000';
 }
 </script>
 
