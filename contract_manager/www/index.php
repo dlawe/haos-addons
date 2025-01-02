@@ -1,59 +1,6 @@
 <?php
-// Verbindung zur Datenbank herstellen mit PDO
-try {
-    $db = new PDO('sqlite:/data/contracts.db');
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    die("Datenbankverbindung fehlgeschlagen: " . $e->getMessage());
-}
-
-// Funktion, um eine Tabelle zu erstellen, falls sie nicht existiert
-function ensureTableExists($db, $table, $columns) {
-    $db->exec("CREATE TABLE IF NOT EXISTS $table ($columns)");
-}
-
-// Funktion, um eine Spalte zu prüfen und ggf. hinzuzufügen
-function ensureColumnExists($db, $table, $column, $definition) {
-    $result = $db->query("PRAGMA table_info($table)");
-    $columns = $result->fetchAll(PDO::FETCH_COLUMN, 1);
-    if (!in_array($column, $columns)) {
-        $db->exec("ALTER TABLE $table ADD COLUMN $column $definition");
-    }
-}
-
-// Sicherstellen, dass die Tabelle "contracts" existiert
-ensureTableExists($db, 'contracts', "
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    provider TEXT NOT NULL,
-    cost REAL NOT NULL,
-    start_date DATE,
-    end_date DATE,
-    contract_holder TEXT,
-    canceled BOOLEAN DEFAULT 0,
-    auto_renew BOOLEAN DEFAULT 1,
-    duration INTEGER,
-    cancellation_period INTEGER,
-    category_id INTEGER,
-    icon_path TEXT,
-    pdf_path TEXT,
-    FOREIGN KEY (category_id) REFERENCES categories(id)
-");
-
-// Sicherstellen, dass alle benötigten Spalten existieren
-$columns = [
-    'canceled' => 'BOOLEAN DEFAULT 0',
-    'auto_renew' => 'BOOLEAN DEFAULT 1',
-    'duration' => 'INTEGER',
-    'cancellation_period' => 'INTEGER',
-    'category_id' => 'INTEGER',
-    'icon_path' => 'TEXT',
-    'pdf_path' => 'TEXT',
-    'contract_holder' => 'TEXT'
-];
-foreach ($columns as $column => $definition) {
-    ensureColumnExists($db, 'contracts', $column, $definition);
-}
+// Verbindung zur SQLite-Datenbank herstellen
+$db = new SQLite3('/data/contracts.db');
 
 // Kategorien als assoziatives Array (ID => ['name' => ..., 'color' => ...])
 $categories = [
@@ -81,23 +28,17 @@ $categories = [
 
 // Funktionen für die Statistiken
 function getContractsCount($db, $condition = '1=1') {
-    $stmt = $db->prepare("SELECT COUNT(*) FROM contracts WHERE $condition");
-    $stmt->execute();
-    return $stmt->fetchColumn();
+    return $db->querySingle("SELECT COUNT(*) FROM contracts WHERE $condition");
 }
 
 function getContracts($db, $condition = '1=1', $search = '') {
     $query = "SELECT * FROM contracts WHERE $condition";
     if (!empty($search)) {
-        $query .= " AND (name LIKE :search OR provider LIKE :search)";
+        // Sicherheit: Verwende SQLite3::escapeString, um SQL-Injection zu verhindern
+        $searchEscaped = SQLite3::escapeString($search);
+        $query .= " AND (name LIKE '%$searchEscaped%' OR provider LIKE '%$searchEscaped%')";
     }
-    $stmt = $db->prepare($query);
-    if (!empty($search)) {
-        $searchParam = '%' . $search . '%';
-        $stmt->bindParam(':search', $searchParam, PDO::PARAM_STR);
-    }
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return $db->query($query);
 }
 
 // Funktion zur Anpassung der Pfade für Ingress
@@ -108,7 +49,7 @@ function getIngressPath($path) {
 
 // Funktion zum Formatieren des Datums
 function formatDate($date) {
-    if (!$date) return 'Unbekannt';
+    if (!$date) return '';
     return date('d.m.Y', strtotime($date));
 }
 
@@ -126,7 +67,7 @@ if ($filter === 'active') {
 } elseif ($filter === 'expiring') {
     $condition = "canceled = 0 
                   AND end_date BETWEEN date('now') AND date('now', '+30 days') 
-                  AND cancellation_period < 30";
+                  AND cancellation_date < date('now', '+30 days')";
 }
 
 // Verträge aus der DB holen
@@ -146,9 +87,17 @@ $activeCount = getContractsCount($db, "canceled = 0 AND (end_date IS NULL OR end
 $canceledCount = getContractsCount($db, "canceled = 1");
 
 // 4. Summierte Kosten aller aktiven Verträge (z. B. Grundkosten)
-$sumCostsQuery = $db->query("SELECT SUM(cost) FROM contracts WHERE canceled = 0 AND (end_date IS NULL OR end_date > date('now'))");
-$sumCostsResult = $sumCostsQuery->fetchColumn();
-$totalCosts = $sumCostsResult ? round($sumCostsResult, 2) : 0.0;
+$sumCostsQuery = $db->querySingle("
+    SELECT SUM(cost) 
+    FROM contracts 
+    WHERE canceled = 0 
+      AND (end_date IS NULL OR end_date > date('now'))
+");
+$totalCosts = $sumCostsQuery ? round($sumCostsQuery, 2) : 0.0;
+
+// 6. Kosten im Monat und im Jahr berechnen
+$totalMonthlyCosts = $totalCosts;
+$totalYearlyCosts = round($totalMonthlyCosts * 12, 2);
 
 // 5. Kosten nach Kategorie, um ein Diagramm zu erstellen (Beispiel)
 $costsPerCategoryQuery = $db->query("
@@ -159,7 +108,7 @@ $costsPerCategoryQuery = $db->query("
 ");
 
 $costsPerCategory = [];
-while ($row = $costsPerCategoryQuery->fetch(PDO::FETCH_ASSOC)) {
+while ($row = $costsPerCategoryQuery->fetchArray(SQLITE3_ASSOC)) {
     $catId = $row['category_id'];
     if (isset($categories[$catId])) {
         $catName = $categories[$catId]['name'];
@@ -198,115 +147,7 @@ foreach ($categories as $catId => $catInfo) {
 $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 
 // Zusätzlich: Zähle die Anzahl der gefilterten Verträge für die Anzeige
-$filteredContractsCount = count($contracts);
-
-// Verarbeitung des Add-Contract Formulars
-$addContractMessage = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
-    // Überprüfen und Sanitisieren der Eingaben
-    $name = trim($_POST['name']);
-    $provider = trim($_POST['provider']);
-    $cost = floatval($_POST['cost']);
-    $start_date = $_POST['start_date'] ?: null;
-    $end_date = $_POST['end_date'] ?: null;
-    $contract_holder = trim($_POST['contract_holder']) ?: null;
-    $cancellation_period = isset($_POST['cancellation_period']) && is_numeric($_POST['cancellation_period']) ? intval($_POST['cancellation_period']) : null;
-    $duration = isset($_POST['duration']) && is_numeric($_POST['duration']) ? intval($_POST['duration']) : null;
-    $category_id = isset($_POST['category_id']) && is_numeric($_POST['category_id']) ? intval($_POST['category_id']) : null;
-
-    // Verzeichnisse definieren
-    $icon_dir = __DIR__ . '/data/icons/';
-    $pdf_dir = __DIR__ . '/data/pdfs/';
-
-    // Standardwerte für Icon und PDF
-    $icon_path = null;
-    $pdf_path = null;
-
-    $errors = [];
-
-    // Hochladen des Icons
-    if (isset($_FILES['icon']) && $_FILES['icon']['error'] === UPLOAD_ERR_OK) {
-        $fileExtension = strtolower(pathinfo($_FILES['icon']['name'], PATHINFO_EXTENSION));
-        $allowed_extensions = ['png', 'jpg', 'jpeg', 'gif'];
-        if (!in_array($fileExtension, $allowed_extensions)) {
-            $errors[] = "Nur PNG, JPG, JPEG und GIF sind als Icon erlaubt.";
-        } else {
-            $icon_name = uniqid('icon_', true) . '.' . $fileExtension; // Eindeutiger Name
-            $icon_path = 'data/icons/' . $icon_name; // Relativer Pfad für die Datenbank
-            $full_icon_path = $icon_dir . $icon_name; // Absoluter Pfad für die Speicherung
-
-            if (!is_dir($icon_dir)) {
-                if (!mkdir($icon_dir, 0777, true)) {
-                    $errors[] = "Das Icon-Verzeichnis konnte nicht erstellt werden.";
-                }
-            }
-            if (!move_uploaded_file($_FILES['icon']['tmp_name'], $full_icon_path)) {
-                $errors[] = "Das Icon konnte nicht hochgeladen werden.";
-            }
-        }
-    } else {
-        $errors[] = "Bitte ein gültiges Icon hochladen.";
-    }
-
-    // Hochladen des PDFs
-    if (isset($_FILES['pdf']) && $_FILES['pdf']['error'] === UPLOAD_ERR_OK) {
-        $fileExtension = strtolower(pathinfo($_FILES['pdf']['name'], PATHINFO_EXTENSION));
-        if ($fileExtension !== 'pdf') {
-            $errors[] = "Nur PDF-Dateien sind erlaubt.";
-        } else {
-            $pdf_name = uniqid('pdf_', true) . '.' . $fileExtension; // Eindeutiger Name
-            $pdf_path = 'data/pdfs/' . $pdf_name; // Relativer Pfad für die Datenbank
-            $full_pdf_path = $pdf_dir . $pdf_name; // Absoluter Pfad für die Speicherung
-
-            if (!is_dir($pdf_dir)) {
-                if (!mkdir($pdf_dir, 0777, true)) {
-                    $errors[] = "Das PDF-Verzeichnis konnte nicht erstellt werden.";
-                }
-            }
-            if (!move_uploaded_file($_FILES['pdf']['tmp_name'], $full_pdf_path)) {
-                $errors[] = "Das PDF konnte nicht hochgeladen werden.";
-            }
-        }
-    } else {
-        $errors[] = "Bitte ein gültiges PDF hochladen.";
-    }
-
-    // Überprüfen, ob Fehler vorliegen
-    if (empty($errors)) {
-        try {
-            // Daten in die Datenbank einfügen
-            $sql = "INSERT INTO contracts (
-                name, provider, cost, start_date, end_date, contract_holder, 
-                canceled, auto_renew, duration, cancellation_period, 
-                category_id, icon_path, pdf_path
-            ) VALUES (:name, :provider, :cost, :start_date, :end_date, :contract_holder, 0, 1, :duration, :cancellation_period, :category_id, :icon_path, :pdf_path)";
-            $stmt = $db->prepare($sql);
-            $stmt->bindParam(':name', $name, PDO::PARAM_STR);
-            $stmt->bindParam(':provider', $provider, PDO::PARAM_STR);
-            $stmt->bindParam(':cost', $cost);
-            $stmt->bindParam(':start_date', $start_date, PDO::PARAM_STR);
-            $stmt->bindParam(':end_date', $end_date, PDO::PARAM_STR);
-            $stmt->bindParam(':contract_holder', $contract_holder, PDO::PARAM_STR);
-            $stmt->bindParam(':duration', $duration, PDO::PARAM_INT);
-            $stmt->bindParam(':cancellation_period', $cancellation_period, PDO::PARAM_INT);
-            $stmt->bindParam(':category_id', $category_id, PDO::PARAM_INT);
-            $stmt->bindParam(':icon_path', $icon_path, PDO::PARAM_STR);
-            $stmt->bindParam(':pdf_path', $pdf_path, PDO::PARAM_STR);
-            $stmt->execute();
-
-            $addContractMessage = "<div class='alert alert-success'>Vertrag erfolgreich hinzugefügt!</div>";
-        } catch (PDOException $e) {
-            $addContractMessage = "<div class='alert alert-danger'>Fehler beim Hinzufügen des Vertrags: " . htmlspecialchars($e->getMessage()) . "</div>";
-        }
-    } else {
-        // Fehler ausgeben
-        $errorMessages = "";
-        foreach ($errors as $error) {
-            $errorMessages .= "<div class='alert alert-danger'>" . htmlspecialchars($error) . "</div>";
-        }
-        $addContractMessage = $errorMessages;
-    }
-}
+$filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ? " AND (name LIKE '%" . SQLite3::escapeString($search) . "%' OR provider LIKE '%" . SQLite3::escapeString($search) . "%')" : ""));
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -406,7 +247,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
             width: 100%;
             max-width: 400px;
             margin: 0 auto;
-            height: 300px;
         }
 
         /* Anpassung des Modals */
@@ -450,7 +290,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
             }
             .chart-container {
                 max-width: 100%;
-                height: 200px;
             }
             .contract-card {
                 width: 100%;
@@ -477,7 +316,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
                         <a class="nav-link active" aria-current="page" href="#">Übersicht</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#addContractModal">+ Vertrag hinzufügen</a>
+                        <a class="nav-link" href="add_contract.php">+ Vertrag hinzufügen</a>
                     </li>
                 </ul>
             </div>
@@ -486,9 +325,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
 
     <!-- Hauptcontainer -->
     <div class="container my-4">
-        <?php if (!empty($addContractMessage)): ?>
-            <?= $addContractMessage ?>
-        <?php endif; ?>
         <div class="row">
             <!-- Statistik-Bereich -->
             <div class="col-lg-4 mb-4">
@@ -502,21 +338,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
                             <!-- Gesamtanzahl Verträge -->
                             <div class="col-6">
                                 <div class="stat-card">
-                                    <h3><?= htmlspecialchars($totalContracts) ?></h3>
+                                    <h3><?= $totalContracts ?></h3>
                                     <p>Gesamt-Verträge</p>
                                 </div>
                             </div>
                             <!-- Anzahl aktive Verträge -->
                             <div class="col-6">
                                 <div class="stat-card">
-                                    <h3><?= htmlspecialchars($activeCount) ?></h3>
+                                    <h3><?= $activeCount ?></h3>
                                     <p>Aktive Verträge</p>
                                 </div>
                             </div>
                             <!-- Anzahl gekündigte Verträge -->
                             <div class="col-6">
                                 <div class="stat-card">
-                                    <h3><?= htmlspecialchars($canceledCount) ?></h3>
+                                    <h3><?= $canceledCount ?></h3>
                                     <p>Gekündigte Verträge</p>
                                 </div>
                             </div>
@@ -571,7 +407,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
                                         <div 
                                             class="contract-card" 
                                             data-contract='<?= $contractJson ?>' 
-                                            style="border-left-color: <?= htmlspecialchars($categoryColor) ?>;">
+                                            style="border-left-color: <?= $categoryColor ?>;">
                                             <?php if (!empty($row['icon_path'])): ?>
                                                 <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
                                             <?php endif; ?>
@@ -584,79 +420,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
                             </div>
                         <?php else: ?>
                             <div class="text-center my-5">
-                                <p class="fs-5">Keine Verträge gefunden. <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#addContractModal">+ Vertrag hinzufügen</button></p>
+                                <p class="fs-5">Keine Verträge gefunden. <a href="add_contract.php" class="btn btn-primary mt-3">+ Vertrag hinzufügen</a></p>
                             </div>
                         <?php endif; ?>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bootstrap Modal für das Hinzufügen eines Vertrags -->
-    <div class="modal fade" id="addContractModal" tabindex="-1" aria-labelledby="addContractModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="addContractModalLabel"><i class="fas fa-plus-circle"></i> Neuen Vertrag hinzufügen</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
-                </div>
-                <div class="modal-body">
-                    <form action="index.php<?= !empty($_SERVER['QUERY_STRING']) ? '?' . htmlspecialchars($_SERVER['QUERY_STRING']) : '' ?>" method="post" enctype="multipart/form-data" class="row g-3">
-                        <input type="hidden" name="add_contract" value="1">
-                        <div class="col-md-6">
-                            <label for="name" class="form-label">Name:</label>
-                            <input type="text" id="name" name="name" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="provider" class="form-label">Anbieter:</label>
-                            <input type="text" id="provider" name="provider" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="contract_holder" class="form-label">Vertragsnehmer:</label>
-                            <input type="text" id="contract_holder" name="contract_holder" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="cost" class="form-label">Kosten:</label>
-                            <input type="number" step="0.01" id="cost" name="cost" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="start_date" class="form-label">Startdatum:</label>
-                            <input type="date" id="start_date" name="start_date" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="end_date" class="form-label">Enddatum:</label>
-                            <input type="date" id="end_date" name="end_date" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="cancellation_period" class="form-label">Kündigungsfrist (Monate):</label>
-                            <input type="number" id="cancellation_period" name="cancellation_period" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="duration" class="form-label">Laufzeit (Monate):</label>
-                            <input type="number" id="duration" name="duration" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="category_id" class="form-label">Kategorie:</label>
-                            <select id="category_id" name="category_id" class="form-select" required>
-                                <?php foreach ($categories as $id => $cat): ?>
-                                    <option value="<?= htmlspecialchars($id) ?>"><?= htmlspecialchars($cat['name']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="icon" class="form-label">Icon hochladen:</label>
-                            <input type="file" id="icon" name="icon" class="form-control" accept="image/*" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="pdf" class="form-label">PDF hochladen:</label>
-                            <input type="file" id="pdf" name="pdf" class="form-control" accept="application/pdf" required>
-                        </div>
-                        <div class="col-12 text-center">
-                            <button type="submit" class="btn btn-primary">Vertrag hinzufügen</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-                        </div>
-                    </form>
                 </div>
             </div>
         </div>
@@ -827,8 +594,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
             const filter = input.value.toLowerCase();
             const contracts = document.querySelectorAll('.contract-card-item');
 
-            let visibleCount = 0;
-
             contracts.forEach(function(contract) {
                 const card = contract.querySelector('.contract-card');
                 const name = card.querySelector('h5').textContent.toLowerCase();
@@ -836,20 +601,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
 
                 if (name.includes(filter) || provider.includes(filter)) {
                     contract.style.display = '';
-                    visibleCount++;
                 } else {
                     contract.style.display = 'none';
                 }
             });
-
-            // Anzeige anpassen, wenn keine Verträge sichtbar sind
-            if (visibleCount === 0) {
-                document.getElementById('contractsContainer').style.display = 'none';
-                document.getElementById('noContractsMessage').style.display = 'block';
-            } else {
-                document.getElementById('contractsContainer').style.display = 'flex';
-                document.getElementById('noContractsMessage').style.display = 'none';
-            }
         }
     </script>
 </body>
