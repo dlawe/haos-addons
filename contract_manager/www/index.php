@@ -86,7 +86,7 @@ $activeCount = getContractsCount($db, "canceled = 0 AND (end_date IS NULL OR end
 // 3. Anzahl gekündigter Verträge
 $canceledCount = getContractsCount($db, "canceled = 1");
 
-// 4. Summierte Kosten aller aktiven Verträge (Grundkosten pro Monat)
+// 4. Summierte Kosten aller aktiven Verträge (z. B. Grundkosten)
 $sumCostsQuery = $db->querySingle("
     SELECT SUM(cost) 
     FROM contracts 
@@ -95,7 +95,11 @@ $sumCostsQuery = $db->querySingle("
 ");
 $totalCosts = $sumCostsQuery ? round($sumCostsQuery, 2) : 0.0;
 
-// 5. Kosten nach Kategorie, um ein Diagramm zu erstellen
+// 6. Kosten im Monat und im Jahr berechnen
+$totalMonthlyCosts = $totalCosts;
+$totalYearlyCosts = round($totalMonthlyCosts * 12, 2);
+
+// 5. Kosten nach Kategorie, um ein Diagramm zu erstellen (Beispiel)
 $costsPerCategoryQuery = $db->query("
     SELECT category_id, SUM(cost) AS total 
     FROM contracts 
@@ -133,10 +137,6 @@ foreach ($categories as $catId => $catInfo) {
 $categoryLabels = json_encode($chartLabels, JSON_UNESCAPED_UNICODE);
 $categoryCosts  = json_encode($chartCosts, JSON_UNESCAPED_UNICODE);
 $categoryChartColors = json_encode($chartColors, JSON_UNESCAPED_UNICODE);
-
-// 6. Kosten pro Monat und Jahr
-$totalCostsPerMonth = $totalCosts; // Summe der monatlichen Kosten
-$totalCostsPerYear = $totalCosts * 12; // Summe der jährlichen Kosten
 
 // Korrekte Zuordnung von Kategorie-IDs zu Namen für JavaScript
 $categoryNames = [];
@@ -237,7 +237,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         }
         .stat-card h3 {
             margin: 0;
-            font-size: 2rem;
+            font-size: 1.5rem; /* Angepasste Schriftgröße */
             color: #007bff;
         }
         .stat-card p {
@@ -455,14 +455,20 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 
                 <!-- Summierte Kosten aller aktiven Verträge -->
                 <div class="stat-card">
-                    <h3><?= number_format($totalCostsPerMonth, 2, ',', '.') ?> €</h3>
-                    <p>Kosten pro Monat</p>
+                    <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
+                    <p>Gesamtkosten (aktiv)</p>
                 </div>
 
-                <!-- Kosten pro Jahr -->
+                <!-- Neue Statistik-Karte: Kosten im Monat -->
                 <div class="stat-card">
-                    <h3><?= number_format($totalCostsPerYear, 2, ',', '.') ?> €</h3>
-                    <p>Kosten pro Jahr</p>
+                    <h3><?= number_format($totalMonthlyCosts, 2, ',', '.') ?> €</h3>
+                    <p>Kosten im Monat</p>
+                </div>
+
+                <!-- Neue Statistik-Karte: Kosten im Jahr -->
+                <div class="stat-card">
+                    <h3><?= number_format($totalYearlyCosts, 2, ',', '.') ?> €</h3>
+                    <p>Kosten im Jahr</p>
                 </div>
             </div>
 
