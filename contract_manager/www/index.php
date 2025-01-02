@@ -34,7 +34,9 @@ function getContractsCount($db, $condition = '1=1') {
 function getContracts($db, $condition = '1=1', $search = '') {
     $query = "SELECT * FROM contracts WHERE $condition";
     if (!empty($search)) {
-        $query .= " AND (name LIKE '%$search%' OR provider LIKE '%$search%')";
+        // Hier besser auf Prepared Statements setzen, um SQL-Injection vorzubeugen
+        $searchEscaped = SQLite3::escapeString($search);
+        $query .= " AND (name LIKE '%$searchEscaped%' OR provider LIKE '%$searchEscaped%')";
     }
     return $db->query($query);
 }
@@ -92,6 +94,47 @@ if ($filter === 'active') {
 
 // Verträge aus der DB holen
 $contracts = getContracts($db, $condition, $search);
+
+// -------------------------------------------------------------
+// Beispielhafte Statistiken ermitteln
+// -------------------------------------------------------------
+
+// 1. Gesamtanzahl aller Verträge
+$totalContracts = getContractsCount($db);
+
+// 2. Anzahl laufender (nicht gekündigter) Verträge
+$activeCount = getContractsCount($db, "canceled = 0 AND (end_date IS NULL OR end_date > date('now'))");
+
+// 3. Anzahl gekündigter Verträge
+$canceledCount = getContractsCount($db, "canceled = 1");
+
+// 4. Summierte Kosten aller aktiven Verträge (z. B. Grundkosten)
+$sumCostsQuery = $db->querySingle("
+    SELECT SUM(cost) 
+    FROM contracts 
+    WHERE canceled = 0 
+      AND (end_date IS NULL OR end_date > date('now'))
+");
+$totalCosts = $sumCostsQuery ? round($sumCostsQuery, 2) : 0.0;
+
+// 5. Kosten nach Kategorie, um ein Diagramm zu erstellen (Beispiel)
+$costsPerCategoryQuery = $db->query("
+    SELECT category_id, SUM(cost) AS total 
+    FROM contracts 
+    WHERE canceled = 0
+    GROUP BY category_id
+");
+
+$costsPerCategory = [];
+while ($row = $costsPerCategoryQuery->fetchArray(SQLITE3_ASSOC)) {
+    $catId = $row['category_id'];
+    $catName = isset($categories[$catId]) ? $categories[$catId] : 'Unbekannt';
+    $costsPerCategory[$catName] = (float)$row['total'];
+}
+
+// Daraus ein JSON bauen für JavaScript (Diagramm)
+$categoryLabels = json_encode(array_keys($costsPerCategory));
+$categoryCosts  = json_encode(array_values($costsPerCategory));
 ?>
 
 <!DOCTYPE html>
@@ -101,6 +144,8 @@ $contracts = getContracts($db, $condition, $search);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vertragsübersicht</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js von CDN laden -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.min.js"></script>
 
     <style>
         body {
@@ -136,6 +181,8 @@ $contracts = getContracts($db, $condition, $search);
 
         .container {
             padding-top: 70px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
         .card-container {
             display: flex;
@@ -152,7 +199,7 @@ $contracts = getContracts($db, $condition, $search);
             position: relative;
             margin-bottom: 20px;
             border-left: 8px solid transparent;
-            cursor: pointer; /* Hand-Cursor, wenn man über die Karte fährt */
+            cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .contract-card:hover {
@@ -184,9 +231,9 @@ $contracts = getContracts($db, $condition, $search);
             border-left-color: #6c757d;
         }
 
-        /* Overlay (Vollbild) */
+        /* Overlay (Vollbild) - (aus dem vorherigen Beispiel) */
         .overlay {
-            display: none; /* Anfangs unsichtbar */
+            display: none; 
             position: fixed;
             top: 0;
             left: 0;
@@ -204,12 +251,10 @@ $contracts = getContracts($db, $condition, $search);
             pointer-events: auto; 
             animation: fadeIn 0.3s forwards;
         }
-        
         @keyframes fadeIn {
             from { opacity: 0; }
             to   { opacity: 1; }
         }
-
         .overlay-content {
             background-color: #fff;
             width: 90%;
@@ -219,7 +264,6 @@ $contracts = getContracts($db, $condition, $search);
             overflow: hidden; 
             display: flex;    
             position: relative;
-            /* Slide/scale Animation für den Inhalt */
             animation: slideUp 0.4s ease forwards;
             transform: translateY(100px);
             opacity: 0;
@@ -230,18 +274,11 @@ $contracts = getContracts($db, $condition, $search);
                 opacity: 1;
             }
         }
-
         .overlay-details {
             width: 40%;
             padding: 20px;
             overflow-y: auto;
             box-sizing: border-box;
-        }
-        .overlay-details h2 {
-            margin-top: 0;
-        }
-        .overlay-details p {
-            margin-bottom: 8px;
         }
         .overlay-pdf {
             width: 60%;
@@ -272,6 +309,45 @@ $contracts = getContracts($db, $condition, $search);
         .close-btn:hover {
             background: #c82333;
         }
+
+        /* Statistik-Bereich */
+        .statistics-section {
+            background-color: #ffffff;
+            margin: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .statistics-section h2 {
+            margin-top: 0;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .stat-card {
+            background: #f7f7f7;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .stat-card h3 {
+            margin: 0;
+            font-size: 2rem;
+        }
+        .stat-card p {
+            margin: 5px 0 0;
+            font-size: 1rem;
+            color: #555;
+        }
+        /* Responsive Charts */
+        .chart-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 30px auto;
+        }
     </style>
 </head>
 <body>
@@ -283,6 +359,42 @@ $contracts = getContracts($db, $condition, $search);
 
 <div class="container">
     <h1 class="text-center">Vertragsübersicht</h1>
+
+    <!-- Statistik-Bereich -->
+    <div class="statistics-section">
+        <h2>Statistiken</h2>
+
+        <div class="stat-grid">
+            <!-- Gesamtanzahl Verträge -->
+            <div class="stat-card">
+                <h3><?= $totalContracts ?></h3>
+                <p>Gesamt-Verträge</p>
+            </div>
+
+            <!-- Anzahl aktive Verträge -->
+            <div class="stat-card">
+                <h3><?= $activeCount ?></h3>
+                <p>Aktive Verträge</p>
+            </div>
+
+            <!-- Anzahl gekündigte Verträge -->
+            <div class="stat-card">
+                <h3><?= $canceledCount ?></h3>
+                <p>Gekündigte Verträge</p>
+            </div>
+
+            <!-- Summierte Kosten aller aktiven Verträge -->
+            <div class="stat-card">
+                <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
+                <p>Gesamtkosten (aktiv)</p>
+            </div>
+        </div>
+
+        <!-- Kleines Balken- oder Tortendiagramm (Chart.js) -->
+        <div class="chart-container">
+            <canvas id="costChart"></canvas>
+        </div>
+    </div>
 
     <!-- Vertragskarten -->
     <div class="card-container">
@@ -325,13 +437,45 @@ $contracts = getContracts($db, $condition, $search);
 </div>
 
 <script>
-// Overlay öffnen
+// Chart.js Diagramm erstellen
+window.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('costChart').getContext('2d');
+    const catLabels = <?= $categoryLabels ?>; // ["Strom","Gas","Internet",...]
+    const catCosts  = <?= $categoryCosts ?>;  // [120,50,20,...]
+
+    // Du kannst ein Balkendiagramm (bar) oder Tortendiagramm (pie/doughnut) wählen
+    new Chart(ctx, {
+        type: 'bar',  // oder 'pie', 'doughnut' usw.
+        data: {
+            labels: catLabels,
+            datasets: [{
+                label: 'Kosten je Kategorie (€)',
+                data: catCosts,
+                backgroundColor: [
+                    '#007bff', '#28a745', '#dc3545', '#ffc107', '#6f42c1',
+                    '#20c997', '#fd7e14', '#6610f2', '#6c757d', '#17a2b8',
+                    // ... zufällig oder fest definierte Farben
+                ],
+                borderColor: '#fff',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            maintainAspectRatio: false, // damit es auch bei weniger Platz gut aussieht
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+
+// Overlay-Funktionen (aus vorherigen Beispielen)
 function openOverlay(contractString) {
-    // JSON-String in Objekt umwandeln
     const contract = JSON.parse(contractString);
     const overlay = document.getElementById('contractOverlay');
 
-    // Linke Spalte (Details) zusammenbauen
     let detailsHtml = `
         <h2>${escapeHtml(contract.name)}</h2>
         <p><strong>Anbieter:</strong> ${escapeHtml(contract.provider)}</p>
@@ -343,8 +487,6 @@ function openOverlay(contractString) {
         <p><strong>Kündigungsfrist (Monate):</strong> ${escapeHtml(contract.cancellation_period)}</p>
         <p><strong>Kategorie-ID:</strong> ${escapeHtml(contract.category_id)}</p>
     `;
-
-    // Inhalte ins DIV schreiben
     document.getElementById('contractDetails').innerHTML = detailsHtml;
 
     // PDF im iframe laden
@@ -352,27 +494,20 @@ function openOverlay(contractString) {
     if (contract.pdf_path && contract.pdf_path !== '') {
         iframe.src = contract.pdf_path;
     } else {
-        // Wenn kein PDF vorhanden ist, src leeren
         iframe.src = '';
     }
-
-    // Overlay anzeigen (CSS-Klasse "show" anfügen)
+    // Overlay anzeigen
     overlay.classList.add('show');
 }
 
-// Overlay schließen
 function closeOverlay() {
     const overlay = document.getElementById('contractOverlay');
     const iframe = document.getElementById('contractPdf');
-
-    // Overlay ausblenden
     overlay.classList.remove('show');
-
-    // Iframe zurücksetzen (optional), falls du willst, dass es bei erneutem Öffnen neu geladen wird
     iframe.src = '';
 }
 
-// Hilfsfunktionen für sicheres Escapen und Datumsformatierung
+// Hilfsfunktionen
 function escapeHtml(text) {
     if (typeof text !== 'string') return text;
     return text
@@ -382,12 +517,10 @@ function escapeHtml(text) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
-
 function formatDate(dateString) {
     if (!dateString) return '';
     const parts = dateString.split('-');
     if (parts.length !== 3) return dateString;
-    // yyyy-mm-dd -> dd.mm.yyyy
     return `${parts[2]}.${parts[1]}.${parts[0]}`;
 }
 </script>
