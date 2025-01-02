@@ -141,6 +141,7 @@ $contracts = getContracts($db, $condition, $search);
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            padding: 0 20px;
         }
         .contract-card {
             background-color: white;
@@ -152,6 +153,11 @@ $contracts = getContracts($db, $condition, $search);
             margin-bottom: 20px;
             border-left: 8px solid transparent;
             cursor: pointer; /* Hand-Cursor, wenn man über die Karte fährt */
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .contract-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
         }
         .contract-card h5 {
             margin-bottom: 10px;
@@ -186,29 +192,62 @@ $contracts = getContracts($db, $condition, $search);
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.5);
             z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
         }
+        .overlay.show {
+            display: block;
+            opacity: 1;
+            pointer-events: auto; 
+            animation: fadeIn 0.3s forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
         .overlay-content {
             background-color: #fff;
             width: 90%;
             height: 90%;
             margin: 3% auto;
             border-radius: 8px;
-            overflow: hidden; /* damit die Ecken schön abgerundet sind */
-            display: flex;    /* zweispaltiges Layout: links Details, rechts PDF */
+            overflow: hidden; 
+            display: flex;    
             position: relative;
+            /* Slide/scale Animation für den Inhalt */
+            animation: slideUp 0.4s ease forwards;
+            transform: translateY(100px);
+            opacity: 0;
         }
+        @keyframes slideUp {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
         .overlay-details {
             width: 40%;
             padding: 20px;
             overflow-y: auto;
             box-sizing: border-box;
         }
+        .overlay-details h2 {
+            margin-top: 0;
+        }
+        .overlay-details p {
+            margin-bottom: 8px;
+        }
         .overlay-pdf {
             width: 60%;
             background-color: #f0f0f0;
             position: relative;
+            box-shadow: -4px 0 12px rgba(0,0,0,0.05);
         }
         .overlay-pdf iframe {
             width: 100%;
@@ -218,12 +257,20 @@ $contracts = getContracts($db, $condition, $search);
         .close-btn {
             position: absolute;
             top: 10px;
-            right: 10px;
-            background: #ccc;
+            right: 15px;
+            background: #dc3545;
             border: none;
             border-radius: 4px;
             padding: 5px 10px;
             cursor: pointer;
+            color: #fff;
+            font-weight: bold;
+            font-size: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background 0.2s;
+        }
+        .close-btn:hover {
+            background: #c82333;
         }
     </style>
 </head>
@@ -242,7 +289,6 @@ $contracts = getContracts($db, $condition, $search);
         <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
             <?php
                 // JSON für das JavaScript aufbereiten
-                // Wir escapen Sonderzeichen sicherheitshalber
                 $contractJson = htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8');
             ?>
             <div 
@@ -257,7 +303,6 @@ $contracts = getContracts($db, $condition, $search);
                 <h5><?= htmlspecialchars($row['name']); ?></h5>
                 <p>Anbieter: <?= htmlspecialchars($row['provider']); ?></p>
                 <p>Kosten: <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
-                <!-- Wenn du willst, kannst du noch Start- oder Enddatum direkt hier anzeigen -->
             </div>
         <?php endwhile; ?>
     </div>
@@ -273,19 +318,18 @@ $contracts = getContracts($db, $condition, $search);
 
         <!-- Rechte Spalte: PDF-Ansicht -->
         <div class="overlay-pdf">
-            <button class="close-btn" onclick="closeOverlay()">Schließen</button>
+            <button class="close-btn" onclick="closeOverlay()">✕</button>
             <iframe id="contractPdf" src=""></iframe>
         </div>
     </div>
 </div>
 
 <script>
+// Overlay öffnen
 function openOverlay(contractString) {
     // JSON-String in Objekt umwandeln
     const contract = JSON.parse(contractString);
-
-    // Overlay anzeigen
-    document.getElementById('contractOverlay').style.display = 'block';
+    const overlay = document.getElementById('contractOverlay');
 
     // Linke Spalte (Details) zusammenbauen
     let detailsHtml = `
@@ -297,34 +341,38 @@ function openOverlay(contractString) {
         <p><strong>Ende:</strong> ${formatDate(contract.end_date)}</p>
         <p><strong>Laufzeit (Monate):</strong> ${escapeHtml(contract.duration)}</p>
         <p><strong>Kündigungsfrist (Monate):</strong> ${escapeHtml(contract.cancellation_period)}</p>
+        <p><strong>Kategorie-ID:</strong> ${escapeHtml(contract.category_id)}</p>
     `;
 
-    // Wenn du die Kategorie ausgeben willst (clientseitig):
-    // Du hast sie als ID in contract.category_id. 
-    // Entweder du gibst sie hier als ID aus oder wandelst sie clientseitig um.
-    // Für die Demo hier einfach "Kategorie-ID"
-    detailsHtml += `<p><strong>Kategorie-ID:</strong> ${escapeHtml(contract.category_id)}</p>`;
-
+    // Inhalte ins DIV schreiben
     document.getElementById('contractDetails').innerHTML = detailsHtml;
 
     // PDF im iframe laden
     const iframe = document.getElementById('contractPdf');
     if (contract.pdf_path && contract.pdf_path !== '') {
-        // Ingress-Pfad anpassen, falls nötig, oder direkt:
         iframe.src = contract.pdf_path;
     } else {
         // Wenn kein PDF vorhanden ist, src leeren
         iframe.src = '';
     }
+
+    // Overlay anzeigen (CSS-Klasse "show" anfügen)
+    overlay.classList.add('show');
 }
 
+// Overlay schließen
 function closeOverlay() {
-    document.getElementById('contractOverlay').style.display = 'none';
-    // Beim Schließen iframe zurücksetzen, um z.B. das PDF neu zu laden, falls gewünscht
-    document.getElementById('contractPdf').src = '';
+    const overlay = document.getElementById('contractOverlay');
+    const iframe = document.getElementById('contractPdf');
+
+    // Overlay ausblenden
+    overlay.classList.remove('show');
+
+    // Iframe zurücksetzen (optional), falls du willst, dass es bei erneutem Öffnen neu geladen wird
+    iframe.src = '';
 }
 
-// Hilfsfunktionen für sicheres Escapen und Datumsformatierung (ähnlich wie in PHP)
+// Hilfsfunktionen für sicheres Escapen und Datumsformatierung
 function escapeHtml(text) {
     if (typeof text !== 'string') return text;
     return text
@@ -335,12 +383,12 @@ function escapeHtml(text) {
         .replace(/'/g, '&#039;');
 }
 
-// Einfaches Datumsformat (yyyy-mm-dd -> dd.mm.yyyy)
 function formatDate(dateString) {
     if (!dateString) return '';
     const parts = dateString.split('-');
     if (parts.length !== 3) return dateString;
-    return parts.reverse().join('.');
+    // yyyy-mm-dd -> dd.mm.yyyy
+    return `${parts[2]}.${parts[1]}.${parts[0]}`;
 }
 </script>
 
