@@ -145,6 +145,9 @@ foreach ($categories as $catId => $catInfo) {
 }
 
 $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
+
+// Zusätzlich: Zähle die Anzahl der gefilterten Verträge für die Anzeige
+$filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ? " AND (name LIKE '%" . SQLite3::escapeString($search) . "%' OR provider LIKE '%" . SQLite3::escapeString($search) . "%')" : ""));
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -390,30 +393,36 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <h5 class="card-title">Vertragsübersicht</h5>
-                        <div class="row row-cols-1 row-cols-md-2 g-4" id="contractsContainer">
-                            <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
-                                <?php
-                                    // JSON für das JavaScript aufbereiten
-                                    $contractJson = htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8');
-                                    // Farbe basierend auf der Kategorie
-                                    $categoryId = $row['category_id'];
-                                    $categoryColor = isset($categories[$categoryId]['color']) ? $categories[$categoryId]['color'] : '#000000'; // Fallback-Farbe
-                                ?>
-                                <div class="col contract-card-item">
-                                    <div 
-                                        class="contract-card" 
-                                        data-contract='<?= $contractJson ?>' 
-                                        style="border-left-color: <?= $categoryColor ?>;">
-                                        <?php if (!empty($row['icon_path'])): ?>
-                                            <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
-                                        <?php endif; ?>
-                                        <h5><?= htmlspecialchars($row['name']); ?></h5>
-                                        <p><strong>Anbieter:</strong> <?= htmlspecialchars($row['provider']); ?></p>
-                                        <p><strong>Kosten:</strong> <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
+                        <?php if ($filteredContractsCount > 0): ?>
+                            <div class="row row-cols-1 row-cols-md-2 g-4" id="contractsContainer">
+                                <?php foreach ($contracts as $row): ?>
+                                    <?php
+                                        // JSON für das JavaScript aufbereiten
+                                        $contractJson = htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8');
+                                        // Farbe basierend auf der Kategorie
+                                        $categoryId = $row['category_id'];
+                                        $categoryColor = isset($categories[$categoryId]['color']) ? $categories[$categoryId]['color'] : '#000000'; // Fallback-Farbe
+                                    ?>
+                                    <div class="col contract-card-item">
+                                        <div 
+                                            class="contract-card" 
+                                            data-contract='<?= $contractJson ?>' 
+                                            style="border-left-color: <?= $categoryColor ?>;">
+                                            <?php if (!empty($row['icon_path'])): ?>
+                                                <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
+                                            <?php endif; ?>
+                                            <h5><?= htmlspecialchars($row['name']); ?></h5>
+                                            <p><strong>Anbieter:</strong> <?= htmlspecialchars($row['provider']); ?></p>
+                                            <p><strong>Kosten:</strong> <?= number_format($row['cost'], 2, ',', '.'); ?> €</p>
+                                        </div>
                                     </div>
-                                </div>
-                            <?php endwhile; ?>
-                        </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="text-center my-5">
+                                <p class="fs-5">Keine Verträge gefunden. <a href="add_contract.php" class="btn btn-primary mt-3">+ Vertrag hinzufügen</a></p>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
