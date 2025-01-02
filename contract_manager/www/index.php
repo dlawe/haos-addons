@@ -86,7 +86,7 @@ $activeCount = getContractsCount($db, "canceled = 0 AND (end_date IS NULL OR end
 // 3. Anzahl gekündigter Verträge
 $canceledCount = getContractsCount($db, "canceled = 1");
 
-// 4. Summierte Kosten aller aktiven Verträge (z. B. Grundkosten)
+// 4. Summierte Kosten aller aktiven Verträge (Grundkosten pro Monat)
 $sumCostsQuery = $db->querySingle("
     SELECT SUM(cost) 
     FROM contracts 
@@ -95,7 +95,7 @@ $sumCostsQuery = $db->querySingle("
 ");
 $totalCosts = $sumCostsQuery ? round($sumCostsQuery, 2) : 0.0;
 
-// 5. Kosten nach Kategorie, um ein Diagramm zu erstellen (Beispiel)
+// 5. Kosten nach Kategorie, um ein Diagramm zu erstellen
 $costsPerCategoryQuery = $db->query("
     SELECT category_id, SUM(cost) AS total 
     FROM contracts 
@@ -133,6 +133,10 @@ foreach ($categories as $catId => $catInfo) {
 $categoryLabels = json_encode($chartLabels, JSON_UNESCAPED_UNICODE);
 $categoryCosts  = json_encode($chartCosts, JSON_UNESCAPED_UNICODE);
 $categoryChartColors = json_encode($chartColors, JSON_UNESCAPED_UNICODE);
+
+// 6. Kosten pro Monat und Jahr
+$totalCostsPerMonth = $totalCosts; // Summe der monatlichen Kosten
+$totalCostsPerYear = $totalCosts * 12; // Summe der jährlichen Kosten
 
 // Korrekte Zuordnung von Kategorie-IDs zu Namen für JavaScript
 $categoryNames = [];
@@ -451,8 +455,14 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 
                 <!-- Summierte Kosten aller aktiven Verträge -->
                 <div class="stat-card">
-                    <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
-                    <p>Gesamtkosten (aktiv)</p>
+                    <h3><?= number_format($totalCostsPerMonth, 2, ',', '.') ?> €</h3>
+                    <p>Kosten pro Monat</p>
+                </div>
+
+                <!-- Kosten pro Jahr -->
+                <div class="stat-card">
+                    <h3><?= number_format($totalCostsPerYear, 2, ',', '.') ?> €</h3>
+                    <p>Kosten pro Jahr</p>
                 </div>
             </div>
 
