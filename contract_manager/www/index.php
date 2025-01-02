@@ -99,6 +99,53 @@ $totalCosts = $sumCostsQuery ? round($sumCostsQuery, 2) : 0.0;
 $totalMonthlyCosts = $totalCosts;
 $totalYearlyCosts = round($totalMonthlyCosts * 12, 2);
 
+// 5. Kosten nach Kategorie, um ein Diagramm zu erstellen (Beispiel)
+$costsPerCategoryQuery = $db->query("
+    SELECT category_id, SUM(cost) AS total 
+    FROM contracts 
+    WHERE canceled = 0
+    GROUP BY category_id
+");
+
+$costsPerCategory = [];
+while ($row = $costsPerCategoryQuery->fetchArray(SQLITE3_ASSOC)) {
+    $catId = $row['category_id'];
+    if (isset($categories[$catId])) {
+        $catName = $categories[$catId]['name'];
+        $cost = (float)$row['total'];
+        $costsPerCategory[$catId] = [
+            'name' => $catName,
+            'cost' => $cost,
+            'color' => $categories[$catId]['color']
+        ];
+    }
+}
+
+// Vorbereitung der Daten für das Diagramm in der Reihenfolge der Kategorien
+$chartLabels = [];
+$chartCosts = [];
+$chartColors = [];
+
+foreach ($categories as $catId => $catInfo) {
+    if (isset($costsPerCategory[$catId])) {
+        $chartLabels[] = $catInfo['name'];
+        $chartCosts[] = $costsPerCategory[$catId]['cost'];
+        $chartColors[] = $catInfo['color'];
+    }
+}
+
+$categoryLabels = json_encode($chartLabels, JSON_UNESCAPED_UNICODE);
+$categoryCosts  = json_encode($chartCosts, JSON_UNESCAPED_UNICODE);
+$categoryChartColors = json_encode($chartColors, JSON_UNESCAPED_UNICODE);
+
+// Korrekte Zuordnung von Kategorie-IDs zu Namen für JavaScript
+$categoryNames = [];
+foreach ($categories as $catId => $catInfo) {
+    $categoryNames[$catId] = $catInfo['name'];
+}
+
+$categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
+
 // Zusätzlich: Zähle die Anzahl der gefilterten Verträge für die Anzeige
 $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ? " AND (name LIKE '%" . SQLite3::escapeString($search) . "%' OR provider LIKE '%" . SQLite3::escapeString($search) . "%')" : ""));
 ?>
@@ -111,6 +158,8 @@ $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ?
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome für Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js von CDN laden -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.min.js"></script>
 
     <style>
         body {
@@ -193,6 +242,13 @@ $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ?
             padding: 5px;
         }
 
+        /* Anpassung des Diagramms */
+        .chart-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
         /* Anpassung des Modals */
         .modal-header {
             background-color: #007bff;
@@ -222,8 +278,19 @@ $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ?
             background-color: #f8f9fa;
         }
 
+        /* Suchleiste */
+        .search-bar {
+            margin-bottom: 20px;
+        }
+
         /* Responsive Anpassungen */
         @media (max-width: 768px) {
+            .stat-content {
+                flex-direction: column;
+            }
+            .chart-container {
+                max-width: 100%;
+            }
             .contract-card {
                 width: 100%;
             }
@@ -243,12 +310,8 @@ $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ?
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <!-- Suchleiste zentriert -->
-                <form class="d-flex mx-auto my-2 my-lg-0">
-                    <input type="text" id="searchInput" class="form-control" placeholder="Verträge suchen..." onkeyup="filterContracts()">
-                </form>
-                <ul class="navbar-nav ms-auto">
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav">
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="#">Übersicht</a>
                     </li>
@@ -262,60 +325,71 @@ $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ?
 
     <!-- Hauptcontainer -->
     <div class="container my-4">
-        <!-- Statistik-Bereich -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <h5>Statistiken</h5>
-                <div class="row g-3">
-                    <!-- Gesamtanzahl Verträge -->
-                    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                        <div class="stat-card">
-                            <h3><?= $totalContracts ?></h3>
-                            <p>Gesamt-Verträge</p>
+        <div class="row">
+            <!-- Statistik-Bereich -->
+            <div class="col-lg-4 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Statistiken</h5>
+                        <div class="search-bar">
+                            <input type="text" id="searchInput" class="form-control" placeholder="Verträge suchen..." onkeyup="filterContracts()">
                         </div>
-                    </div>
-                    <!-- Anzahl aktive Verträge -->
-                    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                        <div class="stat-card">
-                            <h3><?= $activeCount ?></h3>
-                            <p>Aktive Verträge</p>
+                        <div class="row g-3">
+                            <!-- Gesamtanzahl Verträge -->
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <h3><?= $totalContracts ?></h3>
+                                    <p>Gesamt-Verträge</p>
+                                </div>
+                            </div>
+                            <!-- Anzahl aktive Verträge -->
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <h3><?= $activeCount ?></h3>
+                                    <p>Aktive Verträge</p>
+                                </div>
+                            </div>
+                            <!-- Anzahl gekündigte Verträge -->
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <h3><?= $canceledCount ?></h3>
+                                    <p>Gekündigte Verträge</p>
+                                </div>
+                            </div>
+                            <!-- Gesamtkosten (aktiv) -->
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
+                                    <p>Gesamtkosten (aktiv)</p>
+                                </div>
+                            </div>
+                            <!-- Kosten im Monat -->
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <h3><?= number_format($totalMonthlyCosts, 2, ',', '.') ?> €</h3>
+                                    <p>Kosten im Monat</p>
+                                </div>
+                            </div>
+                            <!-- Kosten im Jahr -->
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <h3><?= number_format($totalYearlyCosts, 2, ',', '.') ?> €</h3>
+                                    <p>Kosten im Jahr</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <!-- Anzahl gekündigte Verträge -->
-                    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                        <div class="stat-card">
-                            <h3><?= $canceledCount ?></h3>
-                            <p>Gekündigte Verträge</p>
-                        </div>
-                    </div>
-                    <!-- Gesamtkosten (aktiv) -->
-                    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                        <div class="stat-card">
-                            <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
-                            <p>Gesamtkosten (aktiv)</p>
-                        </div>
-                    </div>
-                    <!-- Kosten im Monat -->
-                    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                        <div class="stat-card">
-                            <h3><?= number_format($totalMonthlyCosts, 2, ',', '.') ?> €</h3>
-                            <p>Kosten im Monat</p>
-                        </div>
-                    </div>
-                    <!-- Kosten im Jahr -->
-                    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                        <div class="stat-card">
-                            <h3><?= number_format($totalYearlyCosts, 2, ',', '.') ?> €</h3>
-                            <p>Kosten im Jahr</p>
+                        <!-- Diagramm -->
+                        <div class="mt-4">
+                            <div class="chart-container">
+                                <canvas id="costChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Vertragskarten-Bereich -->
-        <div class="row">
-            <div class="col-12">
+            <!-- Vertragskarten-Bereich -->
+            <div class="col-lg-8">
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <h5 class="card-title">Vertragsübersicht</h5>
@@ -431,7 +505,41 @@ $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ?
 
     <script>
         // Kategorie-IDs zu Namen aus PHP übertragen
-        const categories = <?= json_encode(array_column($categories, 'name'), JSON_UNESCAPED_UNICODE); ?>;
+        const categories = <?= $categoryNameJson; ?>;
+
+        // Chart.js Diagramm erstellen
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('costChart').getContext('2d');
+            const catLabels = <?= $categoryLabels ?>; // ["Strom","Gas","Internet",...]
+            const catCosts  = <?= $categoryCosts ?>;  // [120,50,20,...]
+            const chartColors = <?= $categoryChartColors ?>; // ["#007bff", "#28a745", ...]
+
+            new Chart(ctx, {
+                type: 'pie',  // Du kannst 'bar', 'pie', 'doughnut' usw. wählen
+                data: {
+                    labels: catLabels,
+                    datasets: [{
+                        label: 'Kosten je Kategorie (€)',
+                        data: catCosts,
+                        backgroundColor: chartColors, // Verwende die gleichen Farben wie in den Vertragskarten
+                        borderColor: '#fff',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Damit es auch bei weniger Platz gut aussieht
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        tooltip: {
+                            enabled: true,
+                        }
+                    }
+                }
+            });
+        });
 
         // Funktion zum Öffnen des Modals mit Vertragsdetails
         const contractModal = new bootstrap.Modal(document.getElementById('contractModal'), {
@@ -459,8 +567,6 @@ $filteredContractsCount = getContractsCount($db, $condition . (!empty($search) ?
                     modalPdf.src = contract.pdf_path;
                     document.getElementById('downloadPdf').href = contract.pdf_path;
                     document.getElementById('openPdf').href = contract.pdf_path;
-                    document.getElementById('downloadPdf').classList.remove('disabled');
-                    document.getElementById('openPdf').classList.remove('disabled');
                 } else {
                     modalPdf.src = 'about:blank';
                     document.getElementById('downloadPdf').href = '#';
