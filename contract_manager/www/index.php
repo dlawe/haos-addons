@@ -130,9 +130,17 @@ foreach ($categories as $catId => $catInfo) {
     }
 }
 
-$categoryLabels = json_encode($chartLabels);
-$categoryCosts  = json_encode($chartCosts);
-$categoryChartColors = json_encode($chartColors);
+$categoryLabels = json_encode($chartLabels, JSON_UNESCAPED_UNICODE);
+$categoryCosts  = json_encode($chartCosts, JSON_UNESCAPED_UNICODE);
+$categoryChartColors = json_encode($chartColors, JSON_UNESCAPED_UNICODE);
+
+// Korrekte Zuordnung von Kategorie-IDs zu Namen für JavaScript
+$categoryNames = [];
+foreach ($categories as $catId => $catInfo) {
+    $categoryNames[$catId] = $catInfo['name'];
+}
+
+$categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -505,99 +513,100 @@ $categoryChartColors = json_encode($chartColors);
 </div>
 
 <script>
-// Chart.js Diagramm erstellen
-window.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('costChart').getContext('2d');
-    const catLabels = <?= $categoryLabels ?>; // ["Strom","Gas","Internet",...]
-    const catCosts  = <?= $categoryCosts ?>;  // [120,50,20,...]
-    const chartColors = <?= $categoryChartColors ?>; // ["#007bff", "#28a745", ...]
+    // Kategorie-IDs zu Namen aus PHP übertragen
+    const categories = <?= $categoryNameJson; ?>;
 
-    new Chart(ctx, {
-        type: 'pie',  // Du kannst 'bar', 'pie', 'doughnut' usw. wählen
-        data: {
-            labels: catLabels,
-            datasets: [{
-                label: 'Kosten je Kategorie (€)',
-                data: catCosts,
-                backgroundColor: chartColors, // Verwende die gleichen Farben wie in den Vertragskarten
-                borderColor: '#fff',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            maintainAspectRatio: false, // Damit es auch bei weniger Platz gut aussieht
-            plugins: {
-                legend: {
-                    position: 'right',
-                },
-                tooltip: {
-                    enabled: true,
+    // Chart.js Diagramm erstellen
+    window.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('costChart').getContext('2d');
+        const catLabels = <?= $categoryLabels ?>; // ["Strom","Gas","Internet",...]
+        const catCosts  = <?= $categoryCosts ?>;  // [120,50,20,...]
+        const chartColors = <?= $categoryChartColors ?>; // ["#007bff", "#28a745", ...]
+
+        new Chart(ctx, {
+            type: 'pie',  // Du kannst 'bar', 'pie', 'doughnut' usw. wählen
+            data: {
+                labels: catLabels,
+                datasets: [{
+                    label: 'Kosten je Kategorie (€)',
+                    data: catCosts,
+                    backgroundColor: chartColors, // Verwende die gleichen Farben wie in den Vertragskarten
+                    borderColor: '#fff',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                maintainAspectRatio: false, // Damit es auch bei weniger Platz gut aussieht
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        enabled: true,
+                    }
                 }
             }
-        }
+        });
     });
-});
 
-// Overlay-Funktionen
-function openOverlay(contractString) {
-    const contract = JSON.parse(contractString);
-    const overlay = document.getElementById('contractOverlay');
+    // Overlay-Funktionen
+    function openOverlay(contractString) {
+        const contract = JSON.parse(contractString);
+        const overlay = document.getElementById('contractOverlay');
 
-    let detailsHtml = `
-        <h2>${escapeHtml(contract.name)}</h2>
-        <p><strong>Anbieter:</strong> ${escapeHtml(contract.provider)}</p>
-        <p><strong>Vertragsnehmer:</strong> ${escapeHtml(contract.contract_holder)}</p>
-        <p><strong>Kosten:</strong> ${parseFloat(contract.cost).toFixed(2)} €</p>
-        <p><strong>Start:</strong> ${formatDate(contract.start_date)}</p>
-        <p><strong>Ende:</strong> ${formatDate(contract.end_date)}</p>
-        <p><strong>Laufzeit (Monate):</strong> ${escapeHtml(contract.duration)}</p>
-        <p><strong>Kündigungsfrist (Monate):</strong> ${escapeHtml(contract.cancellation_period)}</p>
-        <p><strong>Kategorie:</strong> ${getCategoryName(contract.category_id)}</p>
-    `;
-    document.getElementById('contractDetails').innerHTML = detailsHtml;
+        let detailsHtml = `
+            <h2>${escapeHtml(contract.name)}</h2>
+            <p><strong>Anbieter:</strong> ${escapeHtml(contract.provider)}</p>
+            <p><strong>Vertragsnehmer:</strong> ${escapeHtml(contract.contract_holder)}</p>
+            <p><strong>Kosten:</strong> ${parseFloat(contract.cost).toFixed(2)} €</p>
+            <p><strong>Start:</strong> ${formatDate(contract.start_date)}</p>
+            <p><strong>Ende:</strong> ${formatDate(contract.end_date)}</p>
+            <p><strong>Laufzeit (Monate):</strong> ${escapeHtml(contract.duration)}</p>
+            <p><strong>Kündigungsfrist (Monate):</strong> ${escapeHtml(contract.cancellation_period)}</p>
+            <p><strong>Kategorie:</strong> ${getCategoryName(contract.category_id)}</p>
+        `;
+        document.getElementById('contractDetails').innerHTML = detailsHtml;
 
-    // PDF im iframe laden
-    const iframe = document.getElementById('contractPdf');
-    if (contract.pdf_path && contract.pdf_path !== '') {
-        iframe.src = contract.pdf_path;
-    } else {
+        // PDF im iframe laden
+        const iframe = document.getElementById('contractPdf');
+        if (contract.pdf_path && contract.pdf_path !== '') {
+            iframe.src = contract.pdf_path;
+        } else {
+            iframe.src = '';
+        }
+        // Overlay anzeigen
+        overlay.classList.add('show');
+    }
+
+    function closeOverlay() {
+        const overlay = document.getElementById('contractOverlay');
+        const iframe = document.getElementById('contractPdf');
+        overlay.classList.remove('show');
         iframe.src = '';
     }
-    // Overlay anzeigen
-    overlay.classList.add('show');
-}
 
-function closeOverlay() {
-    const overlay = document.getElementById('contractOverlay');
-    const iframe = document.getElementById('contractPdf');
-    overlay.classList.remove('show');
-    iframe.src = '';
-}
+    // Hilfsfunktionen
+    function escapeHtml(text) {
+        if (typeof text !== 'string') return text;
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
 
-// Hilfsfunktionen
-function escapeHtml(text) {
-    if (typeof text !== 'string') return text;
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const parts = dateString.split('-');
+        if (parts.length !== 3) return dateString;
+        return `${parts[2]}.${parts[1]}.${parts[0]}`;
+    }
 
-function formatDate(dateString) {
-    if (!dateString) return '';
-    const parts = dateString.split('-');
-    if (parts.length !== 3) return dateString;
-    return `${parts[2]}.${parts[1]}.${parts[0]}`;
-}
-
-// Funktion zur Umwandlung der Kategorie-ID in den Namen (clientseitig)
-const categories = <?= json_encode(array_column($categories, 'name'), JSON_UNESCAPED_UNICODE); ?>;
-
-function getCategoryName(catId) {
-    return categories[catId] || 'Unbekannt';
-}
+    // Funktion zur Umwandlung der Kategorie-ID in den Namen (clientseitig)
+    function getCategoryName(catId) {
+        return categories[catId] || 'Unbekannt';
+    }
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
