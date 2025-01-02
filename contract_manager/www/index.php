@@ -413,9 +413,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
         .modal-header {
             background-color: #007bff;
             color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
         .modal-title {
             font-size: 1.5rem;
@@ -585,10 +582,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
                                     </div>
                                 <?php endforeach; ?>
                             </div>
-                            <!-- Nachricht anzeigen, wenn keine Verträge sichtbar sind -->
-                            <div id="noContractsMessage" class="text-center my-5" style="display: none;">
-                                <p class="fs-5">Keine Verträge gefunden. <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#addContractModal">+ Vertrag hinzufügen</button></p>
-                            </div>
                         <?php else: ?>
                             <div class="text-center my-5">
                                 <p class="fs-5">Keine Verträge gefunden. <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#addContractModal">+ Vertrag hinzufügen</button></p>
@@ -673,15 +666,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
     <div class="modal fade" id="contractModal" tabindex="-1" aria-labelledby="contractModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header d-flex justify-content-between align-items-center bg-primary text-white">
-                    <div>
-                        <a href="#" id="downloadPdf" class="btn btn-danger me-2" target="_blank">
-                            <i class="fas fa-download"></i> PDF herunterladen
-                        </a>
-                        <a href="#" id="openPdf" class="btn btn-primary" target="_blank">
-                            <i class="fas fa-external-link-alt"></i> PDF öffnen
-                        </a>
-                    </div>
+                <div class="modal-header">
                     <h5 id="contractModalLabel" class="modal-title">
                         <i class="fas fa-file-contract info-icon"></i> Vertragsdetails
                     </h5>
@@ -730,11 +715,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contract'])) {
                             <div class="mt-2">
                                 <iframe id="modalPdf" src="" class="modal-pdf"></iframe>
                             </div>
+                            <div class="mt-3">
+                                <a href="#" id="downloadPdf" class="btn btn-danger me-2" target="_blank">
+                                    <i class="fas fa-download"></i> PDF herunterladen
+                                </a>
+                                <a href="#" id="openPdf" class="btn btn-primary" target="_blank">
+                                    <i class="fas fa-external-link-alt"></i> PDF öffnen
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <!-- Schließen-Button -->
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
                 </div>
             </div>
