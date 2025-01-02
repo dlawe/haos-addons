@@ -8,9 +8,14 @@ function getContractsCount($db, $condition = '1=1') {
 }
 
 function getContracts($db, $condition = '1=1', $search = '') {
-    $query = "SELECT * FROM contracts WHERE $condition";
+    $query = "
+        SELECT c.*, cat.name AS category_name
+        FROM contracts c
+        LEFT JOIN categories cat ON c.category_id = cat.id
+        WHERE $condition
+    ";
     if (!empty($search)) {
-        $query .= " AND (name LIKE '%$search%' OR provider LIKE '%$search%')";
+        $query .= " AND (c.name LIKE '%$search%' OR c.provider LIKE '%$search%')";
     }
     return $db->query($query);
 }
@@ -180,7 +185,7 @@ $contracts = getContracts($db, $condition, $search);
                     </p>
                     <p>Laufzeit: <?= htmlspecialchars($row['duration']); ?> Monate</p>
                     <p>Kündigungsfrist: <?= htmlspecialchars($row['cancellation_period']); ?> Monate</p>
-                    <p>Kategorie-ID: <?= htmlspecialchars($row['category_id']); ?></p>
+                    <p>Kategorie: <?= htmlspecialchars($row['category_name'] ?? 'Unbekannt'); ?></p>
 
                     <!-- PDF Icon unten rechts -->
                     <?php if (!empty($row['pdf_path'])): ?>
