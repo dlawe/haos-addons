@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // Verbindung zur Datenbank herstellen
 try {
     $db = new PDO('sqlite:/data/contracts.db');
@@ -63,6 +67,19 @@ foreach ($columns as $column => $definition) {
     ensureColumnExists($db, 'contracts', $column, $definition);
 }
 
+// Definieren der fehlenden Funktionen
+function getContracts($db, $where = '1=1') {
+    $stmt = $db->prepare("SELECT * FROM contracts WHERE $where ORDER BY id DESC");
+    $stmt->execute();
+    return $stmt;
+}
+
+function getContractsCount($db, $where = '1=1') {
+    $stmt = $db->prepare("SELECT COUNT(*) FROM contracts WHERE $where");
+    $stmt->execute();
+    return $stmt->fetchColumn();
+}
+
 // Überprüfen, ob das Formular zum Hinzufügen eines Vertrags abgesendet wurde
 $addErrors = [];
 $addSuccess = false;
@@ -93,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $addErrors[] = "Nur PNG, JPG, JPEG und GIF sind als Icon erlaubt.";
         } else {
             $icon_name = uniqid('icon_', true) . '.' . $fileExtension; // Eindeutiger Name
-            $icon_path = 'icons/' . $icon_name; // Relativer Pfad für die Datenbank
+            $icon_path = 'data/icons/' . $icon_name; // Relativer Pfad für die Datenbank
             $full_icon_path = $icon_dir . $icon_name; // Absoluter Pfad für die Speicherung
 
             if (!is_dir($icon_dir)) {
@@ -114,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $addErrors[] = "Nur PDF-Dateien sind erlaubt.";
         } else {
             $pdf_name = uniqid('pdf_', true) . '.' . $fileExtension; // Eindeutiger Name
-            $pdf_path = 'pdfs/' . $pdf_name; // Relativer Pfad für die Datenbank
+            $pdf_path = 'data/pdfs/' . $pdf_name; // Relativer Pfad für die Datenbank
             $full_pdf_path = $pdf_dir . $pdf_name; // Absoluter Pfad für die Speicherung
 
             if (!is_dir($pdf_dir)) {
@@ -193,7 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $editErrors[] = "Nur PNG, JPG, JPEG und GIF sind als Icon erlaubt.";
         } else {
             $icon_name = uniqid('icon_', true) . '.' . $fileExtension; // Eindeutiger Name
-            $icon_path = 'icons/' . $icon_name; // Relativer Pfad für die Datenbank
+            $icon_path = 'data/icons/' . $icon_name; // Relativer Pfad für die Datenbank
             $full_icon_path = $icon_dir . $icon_name; // Absoluter Pfad für die Speicherung
 
             if (!is_dir($icon_dir)) {
@@ -212,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $editErrors[] = "Nur PDF-Dateien sind erlaubt.";
         } else {
             $pdf_name = uniqid('pdf_', true) . '.' . $fileExtension; // Eindeutiger Name
-            $pdf_path = 'pdfs/' . $pdf_name; // Relativer Pfad für die Datenbank
+            $pdf_path = 'data/pdfs/' . $pdf_name; // Relativer Pfad für die Datenbank
             $full_pdf_path = $pdf_dir . $pdf_name; // Absoluter Pfad für die Speicherung
 
             if (!is_dir($pdf_dir)) {
@@ -280,12 +297,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Kategorien für das Formular laden (dynamisch aus der Datenbank)
 $categoriesQuery = $db->query("SELECT id, name FROM categories ORDER BY name ASC");
 $categoriesList = [];
+$categories = []; // Neues Array für den schnellen Zugriff
+$defaultColor = '#007bff'; // Standardfarbe für alle Kategorien
+
 while ($row = $categoriesQuery->fetch(PDO::FETCH_ASSOC)) {
     $categoriesList[] = $row;
+    $categories[$row['id']] = [
+        'name' => $row['name'],
+        'color' => $defaultColor // Verwende die Standardfarbe
+    ];
 }
 
 // Verträge aus der DB holen (für Anzeige)
-$contracts = getContracts($db, '1=1', $search);
+$contracts = getContracts($db, '1=1');
 
 // -------------------------------------------------------------
 // Beispielhafte Statistiken ermitteln
@@ -611,15 +635,15 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                                     $contractJson = htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8');
                                     // Farbe basierend auf der Kategorie
                                     $categoryId = $row['category_id'];
-                                    $categoryColor = isset($categories[$categoryId]['color']) ? $categories[$categoryId]['color'] : '#000000'; // Fallback-Farbe
+                                    $categoryColor = isset($categories[$categoryId]['color']) ? htmlspecialchars($categories[$categoryId]['color']) : '#000000'; // Fallback-Farbe
                                 ?>
                                 <div class="col contract-card-item">
                                     <div 
                                         class="contract-card" 
                                         data-contract='<?= $contractJson ?>' 
-                                        style="border-left-color: <?= htmlspecialchars($categoryColor) ?>;">
+                                        style="border-left-color: <?= $categoryColor ?>;">
                                         <?php if (!empty($row['icon_path'])): ?>
-                                            <img src="<?= htmlspecialchars(getIngressPath($row['icon_path'])); ?>" alt="Icon" class="icon">
+                                            <img src="<?= htmlspecialchars($row['icon_path']); ?>" alt="Icon" class="icon">
                                         <?php endif; ?>
                                         <h5><?= htmlspecialchars($row['name']); ?></h5>
                                         <p><strong>Anbieter:</strong> <?= htmlspecialchars($row['provider']); ?></p>
@@ -896,9 +920,6 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             </div>
         </div>
     </div>
-
-    <!-- Bootstrap Modal für das Hinzufügen eines neuen Vertrags (Optional, falls nicht bereits integriert) -->
-    <!-- (Dieser Abschnitt ist bereits in den obigen Modalen integriert) -->
 
     <!-- Bootstrap JS und Abhängigkeiten -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
