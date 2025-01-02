@@ -153,6 +153,8 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vertragsübersicht</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome für Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Chart.js von CDN laden -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.min.js"></script>
 
@@ -205,7 +207,6 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             background-color: white;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             border-radius: 12px;
-            width: 100%;
             padding: 20px;
             position: relative;
             border-left: 8px solid transparent; /* Farbe wird inline gesetzt */
@@ -252,10 +253,26 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         }
         .modal-title {
             font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         .modal-body p {
             font-size: 1rem;
             color: #333;
+        }
+        .modal-body .info-icon {
+            color: #007bff;
+            margin-right: 5px;
+        }
+        .modal-pdf iframe {
+            width: 100%;
+            height: 400px;
+            border: none;
+            border-radius: 8px;
+        }
+        .modal-footer {
+            background-color: #f8f9fa;
         }
 
         /* Suchleiste */
@@ -273,6 +290,9 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             }
             .contract-card {
                 width: 100%;
+            }
+            .modal-pdf iframe {
+                height: 300px;
             }
         }
     </style>
@@ -402,28 +422,65 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 
     <!-- Bootstrap Modal für Vertragsdetails -->
     <div class="modal fade" id="contractModal" tabindex="-1" aria-labelledby="contractModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 id="contractModalLabel" class="modal-title">Vertragsdetails</h5>
+                    <h5 id="contractModalLabel" class="modal-title">
+                        <i class="fas fa-file-contract info-icon"></i> Vertragsdetails
+                    </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row">
                         <!-- Details -->
                         <div class="col-md-6">
-                            <p><strong>Anbieter:</strong> <span id="modalProvider"></span></p>
-                            <p><strong>Vertragsnehmer:</strong> <span id="modalHolder"></span></p>
-                            <p><strong>Kosten:</strong> <span id="modalCost"></span> €</p>
-                            <p><strong>Start:</strong> <span id="modalStart"></span></p>
-                            <p><strong>Ende:</strong> <span id="modalEnd"></span></p>
-                            <p><strong>Laufzeit (Monate):</strong> <span id="modalDuration"></span></p>
-                            <p><strong>Kündigungsfrist (Monate):</strong> <span id="modalCancellation"></span></p>
-                            <p><strong>Kategorie:</strong> <span id="modalCategory"></span></p>
+                            <div class="mb-3">
+                                <h6><i class="fas fa-building"></i> Anbieter:</h6>
+                                <p id="modalProvider"></p>
+                            </div>
+                            <div class="mb-3">
+                                <h6><i class="fas fa-user"></i> Vertragsnehmer:</h6>
+                                <p id="modalHolder"></p>
+                            </div>
+                            <div class="mb-3">
+                                <h6><i class="fas fa-euro-sign"></i> Kosten:</h6>
+                                <p id="modalCost"></p>
+                            </div>
+                            <div class="mb-3">
+                                <h6><i class="fas fa-calendar-alt"></i> Start:</h6>
+                                <p id="modalStart"></p>
+                            </div>
+                            <div class="mb-3">
+                                <h6><i class="fas fa-calendar-alt"></i> Ende:</h6>
+                                <p id="modalEnd"></p>
+                            </div>
+                            <div class="mb-3">
+                                <h6><i class="fas fa-clock"></i> Laufzeit (Monate):</h6>
+                                <p id="modalDuration"></p>
+                            </div>
+                            <div class="mb-3">
+                                <h6><i class="fas fa-hourglass-start"></i> Kündigungsfrist (Monate):</h6>
+                                <p id="modalCancellation"></p>
+                            </div>
+                            <div class="mb-3">
+                                <h6><i class="fas fa-tags"></i> Kategorie:</h6>
+                                <p id="modalCategory"></p>
+                            </div>
                         </div>
                         <!-- PDF -->
                         <div class="col-md-6">
-                            <iframe id="modalPdf" src="" style="width: 100%; height: 300px; border: none;"></iframe>
+                            <h6><i class="fas fa-file-pdf"></i> Vertragsdokument:</h6>
+                            <div class="mt-2">
+                                <iframe id="modalPdf" src="" class="modal-pdf"></iframe>
+                            </div>
+                            <div class="mt-3">
+                                <a href="#" id="downloadPdf" class="btn btn-danger me-2" target="_blank">
+                                    <i class="fas fa-download"></i> PDF herunterladen
+                                </a>
+                                <a href="#" id="openPdf" class="btn btn-primary" target="_blank">
+                                    <i class="fas fa-external-link-alt"></i> PDF öffnen
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -483,12 +540,12 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         document.querySelectorAll('.contract-card').forEach(card => {
             card.addEventListener('click', function() {
                 const contract = JSON.parse(this.getAttribute('data-contract'));
-                
+
                 // Füllen der Modal-Inhalte
                 document.getElementById('contractModalLabel').textContent = contract.name;
                 document.getElementById('modalProvider').textContent = contract.provider;
                 document.getElementById('modalHolder').textContent = contract.contract_holder;
-                document.getElementById('modalCost').textContent = parseFloat(contract.cost).toFixed(2);
+                document.getElementById('modalCost').textContent = parseFloat(contract.cost).toFixed(2) + ' €';
                 document.getElementById('modalStart').textContent = formatDate(contract.start_date);
                 document.getElementById('modalEnd').textContent = formatDate(contract.end_date);
                 document.getElementById('modalDuration').textContent = contract.duration;
@@ -499,8 +556,14 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                 const modalPdf = document.getElementById('modalPdf');
                 if (contract.pdf_path && contract.pdf_path !== '') {
                     modalPdf.src = contract.pdf_path;
+                    document.getElementById('downloadPdf').href = contract.pdf_path;
+                    document.getElementById('openPdf').href = contract.pdf_path;
                 } else {
                     modalPdf.src = 'about:blank';
+                    document.getElementById('downloadPdf').href = '#';
+                    document.getElementById('openPdf').href = '#';
+                    document.getElementById('downloadPdf').classList.add('disabled');
+                    document.getElementById('openPdf').classList.add('disabled');
                 }
 
                 // Öffnen des Modals
