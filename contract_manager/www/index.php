@@ -26,28 +26,28 @@ $categories = [
     20 => 'Kreditverträge'
 ];
 
-// Farbzuordnung für Kategorien (ID => Farbe)
+// Farbzuordnung für Kategorien (ID => Farbe) - Jede Farbe ist einzigartig
 $categoryColors = [
-    1  => '#007bff', // Strom
-    2  => '#28a745', // Gas
-    3  => '#dc3545', // Internet
-    4  => '#ffc107', // Mobilfunk
-    5  => '#6f42c1', // Versicherung
-    6  => '#20c997', // Streaming
-    7  => '#fd7e14', // Fitnessstudio
-    8  => '#6610f2', // Zeitschriften
-    9  => '#6c757d', // Miete
-    10 => '#17a2b8', // Sonstiges
-    11 => '#e83e8c', // Wartungsverträge
-    12 => '#fd7e14', // Cloud-Dienste
-    13 => '#20c997', // Software-Abonnements
-    14 => '#6f42c1', // Mitgliedschaften
-    15 => '#dc3545', // Autoversicherung
-    16 => '#007bff', // Rechtsschutz
-    17 => '#28a745', // Hausrat
-    18 => '#ffc107', // Reiseversicherungen
-    19 => '#6c757d', // Bausparen
-    20 => '#17a2b8'  // Kreditverträge
+    1  => '#007bff', // Strom - Blau
+    2  => '#28a745', // Gas - Grün
+    3  => '#dc3545', // Internet - Rot
+    4  => '#ffc107', // Mobilfunk - Gelb
+    5  => '#6f42c1', // Versicherung - Lila
+    6  => '#20c997', // Streaming - Türkis
+    7  => '#fd7e14', // Fitnessstudio - Orange
+    8  => '#6610f2', // Zeitschriften - Dunkelblau
+    9  => '#6c757d', // Miete - Grau
+    10 => '#17a2b8', // Sonstiges - Blaugrün
+    11 => '#e83e8c', // Wartungsverträge - Pink
+    12 => '#343a40', // Cloud-Dienste - Dunkelgrau
+    13 => '#ffc0cb', // Software-Abonnements - Hellrosa
+    14 => '#ff7f50', // Mitgliedschaften - Korallenrot
+    15 => '#8a2be2', // Autoversicherung - Blauviolett
+    16 => '#ff1493', // Rechtsschutz - Tiefrosa
+    17 => '#00ced1', // Hausrat - Dunkeltürkis
+    18 => '#ff69b4', // Reiseversicherungen - Hot Pink
+    19 => '#2e8b57', // Bausparen - Seetanggrün
+    20 => '#ff8c00'  // Kreditverträge - Dunkelorange
 ];
 
 // Funktionen für die Statistiken
