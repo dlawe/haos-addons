@@ -2,52 +2,28 @@
 // Verbindung zur SQLite-Datenbank herstellen
 $db = new SQLite3('/data/contracts.db');
 
-// Kategorien als assoziatives Array (ID => Kategoriename)
+// Kategorien als assoziatives Array (ID => ['name' => ..., 'color' => ...])
 $categories = [
-    1  => 'Strom',
-    2  => 'Gas',
-    3  => 'Internet',
-    4  => 'Mobilfunk',
-    5  => 'Versicherung',
-    6  => 'Streaming',
-    7  => 'Fitnessstudio',
-    8  => 'Zeitschriften',
-    9  => 'Miete',
-    10 => 'Sonstiges',
-    11 => 'Wartungsverträge',
-    12 => 'Cloud-Dienste',
-    13 => 'Software-Abonnements',
-    14 => 'Mitgliedschaften',
-    15 => 'Autoversicherung',
-    16 => 'Rechtsschutz',
-    17 => 'Hausrat',
-    18 => 'Reiseversicherungen',
-    19 => 'Bausparen',
-    20 => 'Kreditverträge'
-];
-
-// Farbzuordnung für Kategorien (ID => Farbe) - Jede Farbe ist einzigartig
-$categoryColors = [
-    1  => '#007bff', // Strom - Blau
-    2  => '#28a745', // Gas - Grün
-    3  => '#dc3545', // Internet - Rot
-    4  => '#ffc107', // Mobilfunk - Gelb
-    5  => '#6f42c1', // Versicherung - Lila
-    6  => '#20c997', // Streaming - Türkis
-    7  => '#fd7e14', // Fitnessstudio - Orange
-    8  => '#6610f2', // Zeitschriften - Dunkelblau
-    9  => '#6c757d', // Miete - Grau
-    10 => '#17a2b8', // Sonstiges - Blaugrün
-    11 => '#e83e8c', // Wartungsverträge - Pink
-    12 => '#343a40', // Cloud-Dienste - Dunkelgrau
-    13 => '#ffc0cb', // Software-Abonnements - Hellrosa
-    14 => '#ff7f50', // Mitgliedschaften - Korallenrot
-    15 => '#8a2be2', // Autoversicherung - Blauviolett
-    16 => '#ff1493', // Rechtsschutz - Tiefrosa
-    17 => '#00ced1', // Hausrat - Dunkeltürkis
-    18 => '#ff69b4', // Reiseversicherungen - Hot Pink
-    19 => '#2e8b57', // Bausparen - Seetanggrün
-    20 => '#ff8c00'  // Kreditverträge - Dunkelorange
+    1  => ['name' => 'Strom', 'color' => '#007bff'],          // Blau
+    2  => ['name' => 'Gas', 'color' => '#28a745'],            // Grün
+    3  => ['name' => 'Internet', 'color' => '#dc3545'],       // Rot
+    4  => ['name' => 'Mobilfunk', 'color' => '#ffc107'],      // Gelb
+    5  => ['name' => 'Versicherung', 'color' => '#6f42c1'],   // Lila
+    6  => ['name' => 'Streaming', 'color' => '#20c997'],      // Türkis
+    7  => ['name' => 'Fitnessstudio', 'color' => '#fd7e14'],  // Orange
+    8  => ['name' => 'Zeitschriften', 'color' => '#6610f2'],  // Dunkelblau
+    9  => ['name' => 'Miete', 'color' => '#6c757d'],          // Grau
+    10 => ['name' => 'Sonstiges', 'color' => '#17a2b8'],      // Blaugrün
+    11 => ['name' => 'Wartungsverträge', 'color' => '#e83e8c'], // Pink
+    12 => ['name' => 'Cloud-Dienste', 'color' => '#343a40'],  // Dunkelgrau
+    13 => ['name' => 'Software-Abonnements', 'color' => '#ffc0cb'], // Hellrosa
+    14 => ['name' => 'Mitgliedschaften', 'color' => '#ff7f50'],    // Korallenrot
+    15 => ['name' => 'Autoversicherung', 'color' => '#8a2be2'],    // Blauviolett
+    16 => ['name' => 'Rechtsschutz', 'color' => '#ff1493'],        // Tiefrosa
+    17 => ['name' => 'Hausrat', 'color' => '#00ced1'],            // Dunkeltürkis
+    18 => ['name' => 'Reiseversicherungen', 'color' => '#ff69b4'],// Hot Pink
+    19 => ['name' => 'Bausparen', 'color' => '#2e8b57'],           // Seetanggrün
+    20 => ['name' => 'Kreditverträge', 'color' => '#ff8c00']      // Dunkelorange
 ];
 
 // Funktionen für die Statistiken
@@ -130,13 +106,33 @@ $costsPerCategoryQuery = $db->query("
 $costsPerCategory = [];
 while ($row = $costsPerCategoryQuery->fetchArray(SQLITE3_ASSOC)) {
     $catId = $row['category_id'];
-    $catName = isset($categories[$catId]) ? $categories[$catId] : 'Unbekannt';
-    $costsPerCategory[$catName] = (float)$row['total'];
+    if (isset($categories[$catId])) {
+        $catName = $categories[$catId]['name'];
+        $cost = (float)$row['total'];
+        $costsPerCategory[$catId] = [
+            'name' => $catName,
+            'cost' => $cost,
+            'color' => $categories[$catId]['color']
+        ];
+    }
 }
 
-// Daraus ein JSON bauen für JavaScript (Diagramm)
-$categoryLabels = json_encode(array_keys($costsPerCategory));
-$categoryCosts  = json_encode(array_values($costsPerCategory));
+// Vorbereitung der Daten für das Diagramm in der Reihenfolge der Kategorien
+$chartLabels = [];
+$chartCosts = [];
+$chartColors = [];
+
+foreach ($categories as $catId => $catInfo) {
+    if (isset($costsPerCategory[$catId])) {
+        $chartLabels[] = $catInfo['name'];
+        $chartCosts[] = $costsPerCategory[$catId]['cost'];
+        $chartColors[] = $catInfo['color'];
+    }
+}
+
+$categoryLabels = json_encode($chartLabels);
+$categoryCosts  = json_encode($chartCosts);
+$categoryChartColors = json_encode($chartColors);
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -278,6 +274,11 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
         .contract-card h5 {
             margin-bottom: 10px;
             font-size: 1.2rem;
+        }
+        .contract-card p {
+            margin: 5px 0;
+            font-size: 1rem;
+            color: #555;
         }
         .contract-card img.icon {
             position: absolute;
@@ -466,12 +467,12 @@ $categoryCosts  = json_encode(array_values($costsPerCategory));
                     $contractJson = htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8');
                     // Farbe basierend auf der Kategorie
                     $categoryId = $row['category_id'];
-                    $categoryColor = isset($categoryColors[$categoryId]) ? $categoryColors[$categoryId] : '#000000'; // Fallback-Farbe
+                    $categoryColor = isset($categories[$categoryId]['color']) ? $categories[$categoryId]['color'] : '#000000'; // Fallback-Farbe
                 ?>
                 <div 
                     class="contract-card"
                     onclick="openOverlay('<?= $contractJson ?>')"
-                    style="border-left-color: <?= $categoryColor ?>;"
+                    style="border-left-color: <?= $categoryColor ?>;" <!-- Setze die Farbe der linken Kante -->
                 >
                     <?php if (!empty($row['icon_path'])): ?>
                         <img src="<?= getIngressPath($row['icon_path']); ?>" alt="Icon" class="icon">
@@ -509,9 +510,7 @@ window.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('costChart').getContext('2d');
     const catLabels = <?= $categoryLabels ?>; // ["Strom","Gas","Internet",...]
     const catCosts  = <?= $categoryCosts ?>;  // [120,50,20,...]
-
-    // Farben für die Kategorien aus PHP übertragen
-    const backgroundColors = <?= json_encode(array_values($categoryColors)); ?>;
+    const chartColors = <?= $categoryChartColors ?>; // ["#007bff", "#28a745", ...]
 
     new Chart(ctx, {
         type: 'pie',  // Du kannst 'bar', 'pie', 'doughnut' usw. wählen
@@ -520,13 +519,13 @@ window.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Kosten je Kategorie (€)',
                 data: catCosts,
-                backgroundColor: backgroundColors.slice(0, catLabels.length),
+                backgroundColor: chartColors, // Verwende die gleichen Farben wie in den Vertragskarten
                 borderColor: '#fff',
                 borderWidth: 1
             }]
         },
         options: {
-            maintainAspectRatio: false, // damit es auch bei weniger Platz gut aussieht
+            maintainAspectRatio: false, // Damit es auch bei weniger Platz gut aussieht
             plugins: {
                 legend: {
                     position: 'right',
@@ -594,7 +593,7 @@ function formatDate(dateString) {
 }
 
 // Funktion zur Umwandlung der Kategorie-ID in den Namen (clientseitig)
-const categories = <?= json_encode($categories); ?>;
+const categories = <?= json_encode(array_column($categories, 'name'), JSON_UNESCAPED_UNICODE); ?>;
 
 function getCategoryName(catId) {
     return categories[catId] || 'Unbekannt';
