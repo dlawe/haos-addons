@@ -213,30 +213,30 @@ while ($row = $costsPerCategoryQuery->fetchArray(SQLITE3_ASSOC)) {
     }
 }
 
-// Vorbereitung der Daten für das Diagramm
-$chartLabels = [];
-$chartCosts = [];
-$chartColors = [];
+// Vorbereitung der Daten für das Diagramm (Kosten pro Kategorie)
+$categoryLabels = [];
+$categoryCosts = [];
+$categoryColors = [];
 
 foreach ($categories as $catId => $catInfo) {
     if (isset($costsPerCategory[$catId])) {
-        $chartLabels[] = $catInfo['name'];
-        $chartCosts[] = $costsPerCategory[$catId]['cost'];
-        $chartColors[] = $catInfo['color'];
+        $categoryLabels[] = $catInfo['name'];
+        $categoryCosts[] = $costsPerCategory[$catId]['cost'];
+        $categoryColors[] = $catInfo['color'];
     }
 }
 
-$categoryLabels = json_encode($chartLabels, JSON_UNESCAPED_UNICODE);
-$categoryCosts  = json_encode($chartCosts, JSON_UNESCAPED_UNICODE);
-$categoryChartColors = json_encode($chartColors, JSON_UNESCAPED_UNICODE);
+$categoryLabelsJson = json_encode($categoryLabels, JSON_UNESCAPED_UNICODE);
+$categoryCostsJson  = json_encode($categoryCosts, JSON_UNESCAPED_UNICODE);
+$categoryColorsJson = json_encode($categoryColors, JSON_UNESCAPED_UNICODE);
 
-// Korrekte Zuordnung von Kategorie-IDs zu Namen für JavaScript
+// Korrekte Zuordnung von Kategorie-IDs zu Namen für JavaScript (falls benötigt)
 $categoryNames = [];
 foreach ($categories as $catId => $catInfo) {
     $categoryNames[$catId] = $catInfo['name'];
 }
 
-$categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
+$categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -274,7 +274,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         .stat-card {
             background: #ffffff;
             border-radius: 8px;
-            padding: 10px; /* Verkleinertes Padding */
+            padding: 15px; /* Angepasstes Padding */
             text-align: center;
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
             transition: transform 0.2s, box-shadow 0.2s;
@@ -285,12 +285,12 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         }
         .stat-card h3 {
             margin: 0;
-            font-size: 1.2rem; /* Verkleinerte Schriftgröße */
+            font-size: 1.2rem; /* Angepasste Schriftgröße */
             color: #007bff;
         }
         .stat-card p {
             margin: 5px 0 0;
-            font-size: 0.9rem; /* Verkleinerte Schriftgröße */
+            font-size: 0.9rem; /* Angepasste Schriftgröße */
             color: #555;
         }
 
@@ -299,7 +299,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             background-color: white;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             border-radius: 12px;
-            padding: 20px;
+            padding: 15px; /* Reduziertes Padding */
             position: relative;
             border-left: 8px solid transparent; /* Farbe wird inline gesetzt */
             cursor: pointer; /* Hand-Cursor, wenn man über die Karte fährt */
@@ -311,20 +311,20 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         }
         .contract-card h5 {
             margin-bottom: 10px;
-            font-size: 1.2rem;
+            font-size: 1.1rem; /* Verkleinerte Schriftgröße */
             font-weight: 600;
         }
         .contract-card p {
             margin: 5px 0;
-            font-size: 0.95rem;
+            font-size: 0.9rem; /* Verkleinerte Schriftgröße */
             color: #555;
         }
         .contract-card img.icon {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
+            top: 15px;
+            right: 15px;
+            width: 35px;
+            height: 35px;
             object-fit: contain;
             border-radius: 50%;
             background-color: #f0f0f0;
@@ -406,6 +406,14 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         .diagram-buttons .btn {
             margin: 0 10px;
         }
+
+        /* Anpassung des Charts Modals */
+        .chart-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            height: 400px; /* Feste Höhe für das Diagramm */
+        }
     </style>
 </head>
 <body>
@@ -426,15 +434,10 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     <li class="nav-item">
                         <button class="nav-link btn btn-link" data-bs-toggle="modal" data-bs-target="#addContractModal">+ Vertrag hinzufügen</button>
                     </li>
-                    <!-- Diagramm-Buttons -->
+                    <!-- Einzelner Button für Kostenstatistiken -->
                     <li class="nav-item">
-                        <button class="nav-link btn btn-link" id="btnOpenMonthlyCosts">
-                            <i class="fas fa-chart-line"></i> Kosten im Monat
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link btn btn-link" id="btnOpenYearlyCosts">
-                            <i class="fas fa-chart-area"></i> Kosten im Jahr
+                        <button class="nav-link btn btn-link" id="btnOpenCostsStats">
+                            <i class="fas fa-chart-bar"></i> Kosten Statistiken
                         </button>
                     </li>
                 </ul>
@@ -518,7 +521,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <h5 class="card-title mb-4">Vertragsübersicht</h5>
-                        <div class="row row-cols-1 row-cols-md-2 g-4" id="contractsContainer">
+                        <div class="row row-cols-1 row-cols-md-3 g-4" id="contractsContainer">
                             <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
                                 <?php
                                     // JSON für das JavaScript aufbereiten
@@ -693,18 +696,24 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 
     <!-- Bootstrap Modal für die Diagramme -->
     <div class="modal fade" id="chartsModal" tabindex="-1" aria-labelledby="chartsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-md-down">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen-md-down">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 id="chartsModalLabel" class="modal-title">
-                        <i class="fas fa-chart-bar info-icon"></i> Diagramm
+                        <i class="fas fa-chart-bar info-icon"></i> Kosten Statistiken
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
                 </div>
                 <div class="modal-body">
                     <!-- Diagramm-Container -->
-                    <div class="chart-container" id="selectedChartContainer">
-                        <canvas id="selectedChart"></canvas>
+                    <div class="chart-container mb-4">
+                        <canvas id="monthlyCostsChart"></canvas>
+                    </div>
+                    <div class="chart-container mb-4">
+                        <canvas id="yearlyCostsChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="categoryCostsChart"></canvas>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -719,81 +728,133 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 
     <script>
         // Kategorie-IDs zu Namen aus PHP übertragen
-        const categories = <?= $categoryNameJson; ?>;
+        const categories = <?= $categoryNamesJson; ?>;
 
-        // Globale Variable für das aktuelle Diagramm
-        let currentChart = null;
+        // Chart.js Diagramme erstellen
+        let monthlyCostsChart, yearlyCostsChart, categoryCostsChart;
 
-        // Funktion zum Erstellen des Diagramms
-        function createChart(chartType) {
-            const ctx = document.getElementById('selectedChart').getContext('2d');
+        document.addEventListener('DOMContentLoaded', function() {
+            // Event Listener für den Kosten Statistiken Button
+            document.getElementById('btnOpenCostsStats').addEventListener('click', function() {
+                // Öffne das Modal
+                const chartsModal = new bootstrap.Modal(document.getElementById('chartsModal'));
+                chartsModal.show();
 
-            // Lösche das bestehende Diagramm, falls vorhanden
-            if (currentChart) {
-                currentChart.destroy();
-            }
+                // Erstelle die Diagramme beim Öffnen des Modals
+                createMonthlyCostsChart();
+                createYearlyCostsChart();
+                createCategoryCostsChart();
+            });
+        });
 
-            if (chartType === 'monthly') {
-                currentChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Monatliche Kosten'],
-                        datasets: [{
-                            label: 'Kosten im Monat (€)',
-                            data: [<?= $totalMonthlyCosts ?>],
-                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
-                        }]
+        function createMonthlyCostsChart() {
+            const ctx = document.getElementById('monthlyCostsChart').getContext('2d');
+            monthlyCostsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Monatliche Kosten'],
+                    datasets: [{
+                        label: 'Kosten im Monat (€)',
+                        data: [<?= $totalMonthlyCosts ?>],
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Kosten im Monat'
+                        },
+                        legend: {
+                            display: false
+                        }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
+                    scales: {
+                        y: {
+                            beginAtZero: true
                         }
                     }
-                });
-            } else if (chartType === 'yearly') {
-                currentChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Jährliche Kosten'],
-                        datasets: [{
-                            label: 'Kosten im Jahr (€)',
-                            data: [<?= $totalYearlyCosts ?>],
-                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-            }
+                }
+            });
         }
 
-        // Event Listener für Diagramm-Buttons
-        document.getElementById('btnOpenMonthlyCosts').addEventListener('click', function() {
-            createChart('monthly');
-            const chartsModal = new bootstrap.Modal(document.getElementById('chartsModal'));
-            chartsModal.show();
-        });
+        function createYearlyCostsChart() {
+            const ctx = document.getElementById('yearlyCostsChart').getContext('2d');
+            yearlyCostsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jährliche Kosten'],
+                    datasets: [{
+                        label: 'Kosten im Jahr (€)',
+                        data: [<?= $totalYearlyCosts ?>],
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Kosten im Jahr'
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
 
-        document.getElementById('btnOpenYearlyCosts').addEventListener('click', function() {
-            createChart('yearly');
-            const chartsModal = new bootstrap.Modal(document.getElementById('chartsModal'));
-            chartsModal.show();
-        });
+        function createCategoryCostsChart() {
+            const ctx = document.getElementById('categoryCostsChart').getContext('2d');
+            categoryCostsChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: <?= $categoryLabelsJson; ?>,
+                    datasets: [{
+                        label: 'Kosten pro Kategorie (€)',
+                        data: <?= $categoryCostsJson; ?>,
+                        backgroundColor: <?= $categoryColorsJson; ?>,
+                        borderColor: '#ffffff',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Kosten pro Kategorie'
+                        },
+                        legend: {
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    return `${label}: ${value.toFixed(2)} €`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
         // Funktion zum Öffnen des Modals mit Vertragsdetails
         const contractModal = new bootstrap.Modal(document.getElementById('contractModal'), {
@@ -844,7 +905,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             return `${parts[2]}.${parts[1]}.${parts[0]}`;
         }
 
-        // Suchfunktion
+        // Suchfunktion für Verträge
         function filterContracts() {
             const input = document.getElementById('searchInput');
             const filter = input.value.toLowerCase();
