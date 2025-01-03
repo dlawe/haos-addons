@@ -54,6 +54,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $messages[] = ['type' => 'danger', 'text' => 'Ungültige Kategorie ausgewählt.'];
     }
 
+    // Validierung der Datumsfelder
+    if ($start_date && $end_date) {
+        if ($end_date < $start_date) {
+            $messages[] = ['type' => 'danger', 'text' => 'Das Enddatum muss nach dem Startdatum liegen.'];
+        }
+    }
+
+    // Berechnung der Laufzeit, falls Start- und Enddatum vorhanden und korrekt sind
+    if ($start_date && $end_date && $end_date >= $start_date) {
+        $start = new DateTime($start_date);
+        $end = new DateTime($end_date);
+        $interval = $start->diff($end);
+        $duration = ($interval->y * 12) + $interval->m + ($interval->d > 0 ? 1 : 0); // Runden auf volle Monate
+    } else {
+        $duration = null; // Laufzeit kann auch null sein, wenn kein Enddatum angegeben ist
+    }
+
     // Verzeichnisse definieren
     $icon_dir = '/data/icons/';
     $pdf_dir = '/data/pdfs/';
@@ -112,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Überprüfen, ob Fehler vorliegen
-    if (empty($errors)) {
+    if (empty($errors) && empty($messages)) {
         // Daten in die Datenbank einfügen
         $stmt = $db->prepare("INSERT INTO contracts (
             name, provider, cost, start_date, end_date, contract_holder, 
@@ -299,7 +316,7 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             background-color: white;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             border-radius: 12px;
-            padding: 15px; /* Reduziertes Padding */
+            padding: 10px; /* Weiter reduziertes Padding */
             position: relative;
             border-left: 8px solid transparent; /* Farbe wird inline gesetzt */
             cursor: pointer; /* Hand-Cursor, wenn man über die Karte fährt */
@@ -310,21 +327,21 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         .contract-card h5 {
-            margin-bottom: 10px;
-            font-size: 1.1rem; /* Verkleinerte Schriftgröße */
+            margin-bottom: 8px;
+            font-size: 1rem; /* Weiter verkleinerte Schriftgröße */
             font-weight: 600;
         }
         .contract-card p {
-            margin: 5px 0;
-            font-size: 0.9rem; /* Verkleinerte Schriftgröße */
+            margin: 4px 0;
+            font-size: 0.8rem; /* Weiter verkleinerte Schriftgröße */
             color: #555;
         }
         .contract-card img.icon {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            width: 35px;
-            height: 35px;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
             object-fit: contain;
             border-radius: 50%;
             background-color: #f0f0f0;
@@ -372,7 +389,7 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         /* Responsive Anpassungen */
         @media (max-width: 768px) {
             .chart-container {
-                height: 250px; /* Anpassung für kleinere Bildschirme */
+                height: 200px; /* Weiter Anpassung für kleinere Bildschirme */
             }
         }
 
@@ -402,8 +419,8 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         .chart-container {
             width: 100%;
             max-width: 600px; /* Reduzierte maximale Breite */
-            margin: 0 auto 20px; /* Zentrierung und Abstand unten */
-            height: 300px; /* Reduzierte Höhe */
+            margin: 0 auto 15px; /* Zentrierung und kleinerer Abstand unten */
+            height: 250px; /* Weiter reduzierte Höhe */
         }
     </style>
 </head>
@@ -642,7 +659,7 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                         </div>
                         <div class="col-md-6">
                             <label for="start_date" class="form-label">Startdatum:</label>
-                            <input type="date" id="start_date" name="start_date" class="form-control">
+                            <input type="date" id="start_date" name="start_date" class="form-control" required>
                         </div>
                         <div class="col-md-6">
                             <label for="end_date" class="form-label">Enddatum:</label>
@@ -654,7 +671,7 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                         </div>
                         <div class="col-md-6">
                             <label for="duration" class="form-label">Laufzeit (Monate):</label>
-                            <input type="number" id="duration" name="duration" class="form-control">
+                            <input type="number" id="duration" name="duration" class="form-control" readonly>
                         </div>
                         <div class="col-md-6">
                             <label for="category_id" class="form-label">Kategorie:</label>
@@ -744,6 +761,39 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     createCategoryCostsChart();
                 }
             });
+
+            // Event Listener für Start- und Enddatum zur Berechnung der Laufzeit
+            const startDateInput = document.getElementById('start_date');
+            const endDateInput = document.getElementById('end_date');
+            const durationInput = document.getElementById('duration');
+
+            function calculateDuration() {
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+
+                if (startDate && endDate) {
+                    if (endDate < startDate) {
+                        durationInput.value = '';
+                        durationInput.classList.add('is-invalid');
+                    } else {
+                        const start = new Date(startDate);
+                        const end = new Date(endDate);
+                        let months = (end.getFullYear() - start.getFullYear()) * 12;
+                        months += end.getMonth() - start.getMonth();
+                        if (end.getDate() > start.getDate()) {
+                            months += 1;
+                        }
+                        durationInput.value = months;
+                        durationInput.classList.remove('is-invalid');
+                    }
+                } else {
+                    durationInput.value = '';
+                    durationInput.classList.remove('is-invalid');
+                }
+            }
+
+            startDateInput.addEventListener('change', calculateDuration);
+            endDateInput.addEventListener('change', calculateDuration);
         });
 
         function createMonthlyCostsChart() {
@@ -766,7 +816,10 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Kosten im Monat'
+                            text: 'Kosten im Monat',
+                            font: {
+                                size: 14
+                            }
                         },
                         legend: {
                             display: false
@@ -813,7 +866,10 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Kosten im Jahr'
+                            text: 'Kosten im Jahr',
+                            font: {
+                                size: 14
+                            }
                         },
                         legend: {
                             display: false
@@ -860,7 +916,10 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Kosten pro Kategorie'
+                            text: 'Kosten pro Kategorie',
+                            font: {
+                                size: 14
+                            }
                         },
                         legend: {
                             position: 'right',
@@ -900,8 +959,8 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                 document.getElementById('modalCost').textContent = parseFloat(contract.cost).toFixed(2) + ' €';
                 document.getElementById('modalStart').textContent = formatDate(contract.start_date);
                 document.getElementById('modalEnd').textContent = formatDate(contract.end_date);
-                document.getElementById('modalDuration').textContent = contract.duration;
-                document.getElementById('modalCancellation').textContent = contract.cancellation_period;
+                document.getElementById('modalDuration').textContent = contract.duration ? contract.duration + ' Monate' : 'Unbekannt';
+                document.getElementById('modalCancellation').textContent = contract.cancellation_period ? contract.cancellation_period + ' Monate' : 'Unbekannt';
                 document.getElementById('modalCategory').textContent = categories[contract.category_id] || 'Unbekannt';
 
                 // PDF laden, falls vorhanden
