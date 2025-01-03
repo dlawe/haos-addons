@@ -408,6 +408,19 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                 height: 60vh; /* Anpassung für kleinere Bildschirme */
             }
         }
+
+        /* Reduzierte vertikale Abstände im Modal */
+        .contract-details .mb-3 {
+            margin-bottom: 0.5rem; /* Ändere von mb-3 (1rem) zu mb-2 (0.5rem) */
+        }
+
+        /* Optional: Weitere Feinabstimmungen */
+        .contract-details h6 {
+            margin-bottom: 0.2rem;
+        }
+        .contract-details p {
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -556,36 +569,36 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                 <div class="modal-body">
                     <div class="row">
                         <!-- Details und Buttons -->
-                        <div class="col-md-6 d-flex flex-column">
-                            <div class="mb-3">
+                        <div class="col-md-6 d-flex flex-column contract-details">
+                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
                                 <h6><i class="fas fa-building"></i> Anbieter:</h6>
                                 <p id="modalProvider"></p>
                             </div>
-                            <div class="mb-3">
+                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
                                 <h6><i class="fas fa-user"></i> Vertragsnehmer:</h6>
                                 <p id="modalHolder"></p>
                             </div>
-                            <div class="mb-3">
+                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
                                 <h6><i class="fas fa-euro-sign"></i> Kosten:</h6>
                                 <p id="modalCost"></p>
                             </div>
-                            <div class="mb-3">
+                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
                                 <h6><i class="fas fa-calendar-alt"></i> Start:</h6>
                                 <p id="modalStart"></p>
                             </div>
-                            <div class="mb-3">
+                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
                                 <h6><i class="fas fa-calendar-alt"></i> Ende:</h6>
                                 <p id="modalEnd"></p>
                             </div>
-                            <div class="mb-3">
+                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
                                 <h6><i class="fas fa-clock"></i> Laufzeit (Monate):</h6>
                                 <p id="modalDuration"></p>
                             </div>
-                            <div class="mb-3">
+                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
                                 <h6><i class="fas fa-hourglass-start"></i> Kündigungsfrist (Monate):</h6>
                                 <p id="modalCancellation"></p>
                             </div>
-                            <div class="mb-3">
+                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
                                 <h6><i class="fas fa-tags"></i> Kategorie:</h6>
                                 <p id="modalCategory"></p>
                             </div>
@@ -798,7 +811,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         // Optional: Automatisches Schließen des Add-Vertrag-Modals nach erfolgreichem Hinzufügen
         <?php if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($errors)): ?>
             document.addEventListener('DOMContentLoaded', function() {
-                // Schließe das Add-Vertrag-Modal nach 2 Sekunden
+                // Schließe das Add-Vertrag-Modals nach 2 Sekunden
                 setTimeout(function() {
                     var addContractModal = bootstrap.Modal.getInstance(document.getElementById('addContractModal'));
                     if (addContractModal) {
