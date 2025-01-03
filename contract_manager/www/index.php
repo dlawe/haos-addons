@@ -389,9 +389,8 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             border-radius: 8px;
         }
         .pdf-container {
-            position: relative;
             width: 100%;
-            height: 80vh; /* Dynamische Höhe basierend auf der Viewport-Höhe */
+            height: 100%;
         }
         .modal-footer {
             background-color: #f8f9fa;
@@ -410,7 +409,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         }
 
         /* Reduzierte vertikale Abstände im Modal */
-        .contract-details .mb-3 {
+        .contract-details .mb-2 {
             margin-bottom: 0.5rem; /* Ändere von mb-3 (1rem) zu mb-2 (0.5rem) */
         }
 
@@ -420,6 +419,15 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         }
         .contract-details p {
             margin-bottom: 0.5rem;
+        }
+
+        /* Sicherstellen, dass die Modal-Body-Rows und -Columns gleich hoch sind */
+        .modal-body .row {
+            display: flex;
+            align-items: stretch; /* Stellt sicher, dass beide Spalten die gleiche Höhe haben */
+        }
+        .contract-details, .pdf-container {
+            flex: 1;
         }
     </style>
 </head>
@@ -613,9 +621,9 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                             </div>
                         </div>
                         <!-- PDF -->
-                        <div class="col-md-6">
+                        <div class="col-md-6 d-flex flex-column">
                             <h6><i class="fas fa-file-pdf"></i> Vertragsdokument:</h6>
-                            <div class="pdf-container mt-2">
+                            <div class="pdf-container flex-grow-1 mt-2">
                                 <iframe id="modalPdf" src="" class="modal-pdf"></iframe>
                             </div>
                         </div>
