@@ -382,13 +382,16 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             color: #007bff;
             margin-right: 5px;
         }
-        .modal-pdf iframe {
+        .modal-pdf {
             width: 100%;
-            height: 80vh; /* Dynamische Höhe basierend auf der Viewport-Höhe */
-            max-height: 80vh; /* Maximale Höhe */
+            height: 100%;
             border: none;
             border-radius: 8px;
-            overflow: auto; /* Scrollen ermöglichen */
+        }
+        .pdf-container {
+            position: relative;
+            width: 100%;
+            height: 80vh; /* Dynamische Höhe basierend auf der Viewport-Höhe */
         }
         .modal-footer {
             background-color: #f8f9fa;
@@ -401,7 +404,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 
         /* Responsive Anpassungen */
         @media (max-width: 768px) {
-            .modal-pdf iframe {
+            .pdf-container {
                 height: 60vh; /* Anpassung für kleinere Bildschirme */
             }
         }
@@ -588,9 +591,9 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                             </div>
                         </div>
                         <!-- PDF -->
-                        <div class="col-md-12"> <!-- Von col-md-6 zu col-md-12 geändert -->
+                        <div class="col-md-6">
                             <h6><i class="fas fa-file-pdf"></i> Vertragsdokument:</h6>
-                            <div class="mt-2">
+                            <div class="pdf-container mt-2">
                                 <iframe id="modalPdf" src="" class="modal-pdf"></iframe>
                             </div>
                             <div class="mt-3">
