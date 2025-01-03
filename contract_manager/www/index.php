@@ -361,6 +361,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             width: 100%;
             max-width: 400px;
             margin: 0 auto;
+            height: 300px; /* Feste Höhe für das Diagramm */
         }
 
         /* Anpassung des Modals */
@@ -403,8 +404,8 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 
         /* Responsive Anpassungen */
         @media (max-width: 768px) {
-            .pdf-container {
-                height: 60vh; /* Anpassung für kleinere Bildschirme */
+            .chart-container {
+                height: 250px; /* Anpassung für kleinere Bildschirme */
             }
         }
 
@@ -466,53 +467,53 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 
     <!-- Hauptcontainer -->
     <div class="container my-4">
-        <div class="row">
-            <!-- Statistik-Bereich -->
-            <div class="col-lg-4 mb-4">
+        <!-- Statistiksektion oben -->
+        <div class="row mb-4">
+            <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title">Statistiken</h5>
+                        <h5 class="card-title mb-4">Statistiken</h5>
                         <div class="search-bar">
                             <input type="text" id="searchInput" class="form-control" placeholder="Verträge suchen..." onkeyup="filterContracts()">
                         </div>
                         <div class="row g-3">
                             <!-- Gesamtanzahl Verträge -->
-                            <div class="col-6">
+                            <div class="col-md-4 col-sm-6">
                                 <div class="stat-card">
                                     <h3><?= htmlspecialchars($totalContracts) ?></h3>
                                     <p>Gesamt-Verträge</p>
                                 </div>
                             </div>
                             <!-- Anzahl aktive Verträge -->
-                            <div class="col-6">
+                            <div class="col-md-4 col-sm-6">
                                 <div class="stat-card">
                                     <h3><?= htmlspecialchars($activeCount) ?></h3>
                                     <p>Aktive Verträge</p>
                                 </div>
                             </div>
                             <!-- Anzahl gekündigte Verträge -->
-                            <div class="col-6">
+                            <div class="col-md-4 col-sm-6">
                                 <div class="stat-card">
                                     <h3><?= htmlspecialchars($canceledCount) ?></h3>
                                     <p>Gekündigte Verträge</p>
                                 </div>
                             </div>
                             <!-- Gesamtkosten (aktiv) -->
-                            <div class="col-6">
+                            <div class="col-md-4 col-sm-6">
                                 <div class="stat-card">
                                     <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
                                     <p>Gesamtkosten (aktiv)</p>
                                 </div>
                             </div>
                             <!-- Kosten im Monat -->
-                            <div class="col-6">
+                            <div class="col-md-4 col-sm-6">
                                 <div class="stat-card">
                                     <h3><?= number_format($totalMonthlyCosts, 2, ',', '.') ?> €</h3>
                                     <p>Kosten im Monat</p>
                                 </div>
                             </div>
                             <!-- Kosten im Jahr -->
-                            <div class="col-6">
+                            <div class="col-md-4 col-sm-6">
                                 <div class="stat-card">
                                     <h3><?= number_format($totalYearlyCosts, 2, ',', '.') ?> €</h3>
                                     <p>Kosten im Jahr</p>
@@ -528,12 +529,14 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Vertragskarten-Bereich -->
-            <div class="col-lg-8">
+        <!-- Vertragsübersicht unten -->
+        <div class="row">
+            <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title">Vertragsübersicht</h5>
+                        <h5 class="card-title mb-4">Vertragsübersicht</h5>
                         <div class="row row-cols-1 row-cols-md-2 g-4" id="contractsContainer">
                             <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
                                 <?php
@@ -578,40 +581,40 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     <div class="row">
                         <!-- Details und Buttons -->
                         <div class="col-md-6 d-flex flex-column contract-details">
-                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
+                            <div class="mb-2">
                                 <h6><i class="fas fa-building"></i> Anbieter:</h6>
                                 <p id="modalProvider"></p>
                             </div>
-                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
+                            <div class="mb-2">
                                 <h6><i class="fas fa-user"></i> Vertragsnehmer:</h6>
                                 <p id="modalHolder"></p>
                             </div>
-                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
+                            <div class="mb-2">
                                 <h6><i class="fas fa-euro-sign"></i> Kosten:</h6>
                                 <p id="modalCost"></p>
                             </div>
-                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
+                            <div class="mb-2">
                                 <h6><i class="fas fa-calendar-alt"></i> Start:</h6>
                                 <p id="modalStart"></p>
                             </div>
-                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
+                            <div class="mb-2">
                                 <h6><i class="fas fa-calendar-alt"></i> Ende:</h6>
                                 <p id="modalEnd"></p>
                             </div>
-                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
+                            <div class="mb-2">
                                 <h6><i class="fas fa-clock"></i> Laufzeit (Monate):</h6>
                                 <p id="modalDuration"></p>
                             </div>
-                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
+                            <div class="mb-2">
                                 <h6><i class="fas fa-hourglass-start"></i> Kündigungsfrist (Monate):</h6>
                                 <p id="modalCancellation"></p>
                             </div>
-                            <div class="mb-2"> <!-- Geändert von mb-3 zu mb-2 -->
+                            <div class="mb-2">
                                 <h6><i class="fas fa-tags"></i> Kategorie:</h6>
                                 <p id="modalCategory"></p>
                             </div>
                             <!-- Buttons nach links setzen -->
-                            <div class="mt-auto"> <!-- mt-auto um die Buttons am Ende der Spalte zu platzieren -->
+                            <div class="mt-auto">
                                 <a href="#" id="downloadPdf" class="btn btn-danger me-2" target="_blank">
                                     <i class="fas fa-download"></i> PDF herunterladen
                                 </a>
