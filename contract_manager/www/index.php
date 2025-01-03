@@ -555,8 +555,8 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                 </div>
                 <div class="modal-body">
                     <div class="row">
-                        <!-- Details -->
-                        <div class="col-md-6">
+                        <!-- Details und Buttons -->
+                        <div class="col-md-6 d-flex flex-column">
                             <div class="mb-3">
                                 <h6><i class="fas fa-building"></i> Anbieter:</h6>
                                 <p id="modalProvider"></p>
@@ -589,20 +589,21 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                                 <h6><i class="fas fa-tags"></i> Kategorie:</h6>
                                 <p id="modalCategory"></p>
                             </div>
-                        </div>
-                        <!-- PDF -->
-                        <div class="col-md-6">
-                            <h6><i class="fas fa-file-pdf"></i> Vertragsdokument:</h6>
-                            <div class="pdf-container mt-2">
-                                <iframe id="modalPdf" src="" class="modal-pdf"></iframe>
-                            </div>
-                            <div class="mt-3">
+                            <!-- Buttons nach links setzen -->
+                            <div class="mt-auto"> <!-- mt-auto um die Buttons am Ende der Spalte zu platzieren -->
                                 <a href="#" id="downloadPdf" class="btn btn-danger me-2" target="_blank">
                                     <i class="fas fa-download"></i> PDF herunterladen
                                 </a>
                                 <a href="#" id="openPdf" class="btn btn-primary" target="_blank">
                                     <i class="fas fa-external-link-alt"></i> PDF öffnen
                                 </a>
+                            </div>
+                        </div>
+                        <!-- PDF -->
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-file-pdf"></i> Vertragsdokument:</h6>
+                            <div class="pdf-container mt-2">
+                                <iframe id="modalPdf" src="" class="modal-pdf"></iframe>
                             </div>
                         </div>
                     </div>
@@ -685,9 +686,6 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         </div>
     </div>
 
-    <!-- Bootstrap Modal für Vertragsdetails (unverändert) -->
-    <!-- ... (Der bereits vorhandene Modal-Code bleibt unverändert) ... -->
-
     <!-- Bootstrap JS und Abhängigkeiten -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -755,6 +753,8 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     modalPdf.src = contract.pdf_path;
                     document.getElementById('downloadPdf').href = contract.pdf_path;
                     document.getElementById('openPdf').href = contract.pdf_path;
+                    document.getElementById('downloadPdf').classList.remove('disabled');
+                    document.getElementById('openPdf').classList.remove('disabled');
                 } else {
                     modalPdf.src = 'about:blank';
                     document.getElementById('downloadPdf').href = '#';
