@@ -1,6 +1,6 @@
 <?php
 // Verbindung zur SQLite-Datenbank herstellen
-$db = new SQLite3('/data/contracts.db');
+$db = new SQLite3(__DIR__ . '/data/contracts.db');
 
 // Kategorien als assoziatives Array (ID => ['name' => ..., 'color' => ...])
 $categories = [
@@ -55,8 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Verzeichnisse definieren
-    $icon_dir = '/data/icons/';
-    $pdf_dir = '/data/pdfs/';
+    $icon_dir = __DIR__ . '/data/icons/';
+    $pdf_dir = __DIR__ . '/data/pdfs/';
 
     // Standardwerte für Icon und PDF
     $icon_path = null;
@@ -111,6 +111,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "Bitte ein gültiges PDF hochladen.";
     }
 
+    // Berechnung der Laufzeit, falls Start- und Enddatum vorhanden und korrekt sind
+    if ($start_date && $end_date && $end_date >= $start_date) {
+        $start = new DateTime($start_date);
+        $end = new DateTime($end_date);
+        $interval = $start->diff($end);
+        $duration = ($interval->y * 12) + $interval->m + ($interval->d > 0 ? 1 : 0); // Rundung auf volle Monate
+    } else {
+        $duration = null; // Laufzeit kann auch null sein, wenn kein Enddatum angegeben ist
+    }
+
     // Überprüfen, ob Fehler vorliegen
     if (empty($errors)) {
         // Daten in die Datenbank einfügen
@@ -139,6 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = $stmt->execute();
 
         if ($result) {
+            // Erfolgsmeldung setzen und zur Übersicht weiterleiten
             $messages[] = ['type' => 'success', 'text' => 'Vertrag erfolgreich hinzugefügt!'];
         } else {
             $messages[] = ['type' => 'danger', 'text' => 'Fehler beim Hinzufügen des Vertrags.'];
@@ -222,7 +233,7 @@ foreach ($categories as $catId => $catInfo) {
     if (isset($costsPerCategory[$catId])) {
         $categoryLabels[] = $catInfo['name'];
         $categoryCosts[] = $costsPerCategory[$catId]['cost'];
-        $categoryColors[] = $catInfo['color'];
+        $categoryColors[] = $costsPerCategory[$catId]['color'];
     }
 }
 
@@ -422,8 +433,9 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="#">Übersicht</a>
                     </li>
+                    <!-- Angepasster Button: Weiterleitung zur add_contract.php Seite -->
                     <li class="nav-item">
-                        <button class="nav-link btn btn-link" data-bs-toggle="modal" data-bs-target="#addContractModal">+ Vertrag hinzufügen</button>
+                        <a class="nav-link btn btn-primary" href="add_contract.php">+ Vertrag hinzufügen</a>
                     </li>
                     <!-- Einzelner Button für Kostenstatistiken -->
                     <li class="nav-item">
@@ -609,77 +621,6 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bootstrap Modal für das Hinzufügen eines neuen Vertrags -->
-    <div class="modal fade" id="addContractModal" tabindex="-1" aria-labelledby="addContractModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="addContractModalLabel">Neuen Vertrag hinzufügen</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
-                </div>
-                <div class="modal-body">
-                    <form action="index.php" method="post" enctype="multipart/form-data" class="row g-3">
-                        <div class="col-md-6">
-                            <label for="name" class="form-label">Name:</label>
-                            <input type="text" id="name" name="name" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="provider" class="form-label">Anbieter:</label>
-                            <input type="text" id="provider" name="provider" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="contract_holder" class="form-label">Vertragsnehmer:</label>
-                            <input type="text" id="contract_holder" name="contract_holder" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="cost" class="form-label">Kosten:</label>
-                            <input type="number" step="0.01" id="cost" name="cost" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="start_date" class="form-label">Startdatum:</label>
-                            <input type="date" id="start_date" name="start_date" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="end_date" class="form-label">Enddatum:</label>
-                            <input type="date" id="end_date" name="end_date" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="cancellation_period" class="form-label">Kündigungsfrist (Monate):</label>
-                            <input type="number" id="cancellation_period" name="cancellation_period" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="duration" class="form-label">Laufzeit (Monate):</label>
-                            <input type="number" id="duration" name="duration" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="category_id" class="form-label">Kategorie:</label>
-                            <select id="category_id" name="category_id" class="form-select" required>
-                                <option value="">-- Bitte wählen --</option>
-                                <?php foreach ($categories as $id => $cat): ?>
-                                    <option value="<?= htmlspecialchars($id); ?>"><?= htmlspecialchars($cat['name']); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="icon" class="form-label">Icon hochladen:</label>
-                            <input type="file" id="icon" name="icon" class="form-control" accept="image/*" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="pdf" class="form-label">PDF hochladen:</label>
-                            <input type="file" id="pdf" name="pdf" class="form-control" accept="application/pdf" required>
-                        </div>
-                        <div class="col-12 text-center">
-                            <button type="submit" class="btn btn-primary">Vertrag hinzufügen</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-                        </div>
-                        <!-- CSRF-Token hinzufügen (Optional) -->
-                        <!-- <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']); ?>"> -->
-                    </form>
                 </div>
             </div>
         </div>
