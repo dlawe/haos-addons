@@ -263,7 +263,6 @@ foreach ($categories as $catId => $catInfo) {
 
 $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 ?>
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -385,9 +384,11 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         }
         .modal-pdf iframe {
             width: 100%;
-            height: 400px;
+            height: 80vh; /* Dynamische Höhe basierend auf der Viewport-Höhe */
+            max-height: 80vh; /* Maximale Höhe */
             border: none;
             border-radius: 8px;
+            overflow: auto; /* Scrollen ermöglichen */
         }
         .modal-footer {
             background-color: #f8f9fa;
@@ -400,17 +401,8 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 
         /* Responsive Anpassungen */
         @media (max-width: 768px) {
-            .stat-content {
-                flex-direction: column;
-            }
-            .chart-container {
-                max-width: 100%;
-            }
-            .contract-card {
-                width: 100%;
-            }
             .modal-pdf iframe {
-                height: 300px;
+                height: 60vh; /* Anpassung für kleinere Bildschirme */
             }
         }
     </style>
@@ -596,7 +588,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                             </div>
                         </div>
                         <!-- PDF -->
-                        <div class="col-md-6">
+                        <div class="col-md-12"> <!-- Von col-md-6 zu col-md-12 geändert -->
                             <h6><i class="fas fa-file-pdf"></i> Vertragsdokument:</h6>
                             <div class="mt-2">
                                 <iframe id="modalPdf" src="" class="modal-pdf"></iframe>
@@ -682,6 +674,8 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                             <button type="submit" class="btn btn-primary">Vertrag hinzufügen</button>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
                         </div>
+                        <!-- CSRF-Token hinzufügen (Optional) -->
+                        <!-- <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']); ?>"> -->
                     </form>
                 </div>
             </div>
@@ -797,6 +791,19 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                 }
             });
         }
+
+        // Optional: Automatisches Schließen des Add-Vertrag-Modals nach erfolgreichem Hinzufügen
+        <?php if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($errors)): ?>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Schließe das Add-Vertrag-Modal nach 2 Sekunden
+                setTimeout(function() {
+                    var addContractModal = bootstrap.Modal.getInstance(document.getElementById('addContractModal'));
+                    if (addContractModal) {
+                        addContractModal.hide();
+                    }
+                }, 2000);
+            });
+        <?php endif; ?>
     </script>
 </body>
 </html>
