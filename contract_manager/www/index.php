@@ -372,7 +372,7 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         /* Responsive Anpassungen */
         @media (max-width: 768px) {
             .chart-container {
-                height: 300px; /* Anpassung für kleinere Bildschirme */
+                height: 250px; /* Anpassung für kleinere Bildschirme */
             }
         }
 
@@ -398,21 +398,12 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             flex: 1;
         }
 
-        /* Button-Styling für Diagramme */
-        .diagram-buttons {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .diagram-buttons .btn {
-            margin: 0 10px;
-        }
-
-        /* Anpassung des Charts Modals */
+        /* Anpassung der Diagramm-Container */
         .chart-container {
             width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            height: 400px; /* Feste Höhe für das Diagramm */
+            max-width: 600px; /* Reduzierte maximale Breite */
+            margin: 0 auto 20px; /* Zentrierung und Abstand unten */
+            height: 300px; /* Reduzierte Höhe */
         }
     </style>
 </head>
@@ -706,11 +697,17 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                 </div>
                 <div class="modal-body">
                     <!-- Diagramm-Container -->
-                    <div class="chart-container mb-4">
-                        <canvas id="monthlyCostsChart"></canvas>
-                    </div>
-                    <div class="chart-container mb-4">
-                        <canvas id="yearlyCostsChart"></canvas>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="chart-container mb-3">
+                                <canvas id="monthlyCostsChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chart-container mb-3">
+                                <canvas id="yearlyCostsChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                     <div class="chart-container">
                         <canvas id="categoryCostsChart"></canvas>
@@ -740,10 +737,12 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                 const chartsModal = new bootstrap.Modal(document.getElementById('chartsModal'));
                 chartsModal.show();
 
-                // Erstelle die Diagramme beim Öffnen des Modals
-                createMonthlyCostsChart();
-                createYearlyCostsChart();
-                createCategoryCostsChart();
+                // Erstelle die Diagramme beim Öffnen des Modals, falls sie noch nicht erstellt wurden
+                if (!monthlyCostsChart && !yearlyCostsChart && !categoryCostsChart) {
+                    createMonthlyCostsChart();
+                    createYearlyCostsChart();
+                    createCategoryCostsChart();
+                }
             });
         });
 
@@ -775,7 +774,19 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     },
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            ticks: {
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 10
+                                }
+                            }
                         }
                     }
                 }
@@ -810,7 +821,19 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     },
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            ticks: {
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 10
+                                }
+                            }
                         }
                     }
                 }
@@ -840,7 +863,12 @@ $categoryNamesJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                             text: 'Kosten pro Kategorie'
                         },
                         legend: {
-                            position: 'right'
+                            position: 'right',
+                            labels: {
+                                font: {
+                                    size: 12
+                                }
+                            }
                         },
                         tooltip: {
                             callbacks: {
