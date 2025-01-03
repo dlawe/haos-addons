@@ -331,15 +331,6 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             padding: 5px;
         }
 
-        /* Anpassung des Diagramms */
-        .chart-container {
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-            height: 400px; /* Feste Höhe für das Diagramm */
-            display: none; /* Standardmäßig versteckt */
-        }
-
         /* Anpassung des Modals */
         .modal-header {
             background-color: #007bff;
@@ -435,10 +426,15 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     <li class="nav-item">
                         <button class="nav-link btn btn-link" data-bs-toggle="modal" data-bs-target="#addContractModal">+ Vertrag hinzufügen</button>
                     </li>
-                    <!-- Button zum Öffnen des Statistik-Modals -->
+                    <!-- Diagramm-Buttons -->
                     <li class="nav-item">
-                        <button class="nav-link btn btn-link" data-bs-toggle="modal" data-bs-target="#statisticsModal">
-                            <i class="fas fa-chart-bar"></i> Statistiken anzeigen
+                        <button class="nav-link btn btn-link" id="btnOpenMonthlyCosts">
+                            <i class="fas fa-chart-line"></i> Kosten im Monat
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link btn btn-link" id="btnOpenYearlyCosts">
+                            <i class="fas fa-chart-area"></i> Kosten im Jahr
                         </button>
                     </li>
                 </ul>
@@ -458,6 +454,64 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 
     <!-- Hauptcontainer -->
     <div class="container my-4">
+        <!-- Statistiksektion oben -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Statistiken</h5>
+                        <div class="search-bar">
+                            <input type="text" id="searchInput" class="form-control" placeholder="Verträge suchen..." onkeyup="filterContracts()">
+                        </div>
+                        <div class="row g-3">
+                            <!-- Gesamtanzahl Verträge -->
+                            <div class="col-md-2 col-sm-4">
+                                <div class="stat-card">
+                                    <h3><?= htmlspecialchars($totalContracts) ?></h3>
+                                    <p>Gesamt-Verträge</p>
+                                </div>
+                            </div>
+                            <!-- Anzahl aktive Verträge -->
+                            <div class="col-md-2 col-sm-4">
+                                <div class="stat-card">
+                                    <h3><?= htmlspecialchars($activeCount) ?></h3>
+                                    <p>Aktive Verträge</p>
+                                </div>
+                            </div>
+                            <!-- Anzahl gekündigte Verträge -->
+                            <div class="col-md-2 col-sm-4">
+                                <div class="stat-card">
+                                    <h3><?= htmlspecialchars($canceledCount) ?></h3>
+                                    <p>Gekündigte Verträge</p>
+                                </div>
+                            </div>
+                            <!-- Gesamtkosten (aktiv) -->
+                            <div class="col-md-2 col-sm-4">
+                                <div class="stat-card">
+                                    <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
+                                    <p>Gesamtkosten (aktiv)</p>
+                                </div>
+                            </div>
+                            <!-- Kosten im Monat -->
+                            <div class="col-md-2 col-sm-4">
+                                <div class="stat-card">
+                                    <h3><?= number_format($totalMonthlyCosts, 2, ',', '.') ?> €</h3>
+                                    <p>Kosten im Monat</p>
+                                </div>
+                            </div>
+                            <!-- Kosten im Jahr -->
+                            <div class="col-md-2 col-sm-4">
+                                <div class="stat-card">
+                                    <h3><?= number_format($totalYearlyCosts, 2, ',', '.') ?> €</h3>
+                                    <p>Kosten im Jahr</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Vertragsübersicht unten -->
         <div class="row">
             <div class="col-12">
@@ -637,91 +691,20 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         </div>
     </div>
 
-    <!-- Bootstrap Modal für die Statistiken -->
-    <div class="modal fade" id="statisticsModal" tabindex="-1" aria-labelledby="statisticsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen-md-down">
+    <!-- Bootstrap Modal für die Diagramme -->
+    <div class="modal fade" id="chartsModal" tabindex="-1" aria-labelledby="chartsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-md-down">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 id="statisticsModalLabel" class="modal-title">
-                        <i class="fas fa-chart-bar info-icon"></i> Statistiken
+                    <h5 id="chartsModalLabel" class="modal-title">
+                        <i class="fas fa-chart-bar info-icon"></i> Diagramm
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- Suchleiste und Filter -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <input type="text" id="searchStatsInput" class="form-control" placeholder="Statistiken durchsuchen..." onkeyup="filterStatistics()">
-                        </div>
-                        <div class="col-md-6">
-                            <select id="filterCategory" class="form-select" onchange="filterStatistics()">
-                                <option value="all">Alle Kategorien</option>
-                                <?php foreach ($categories as $id => $cat): ?>
-                                    <option value="<?= htmlspecialchars($id); ?>"><?= htmlspecialchars($cat['name']); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-                    <!-- Statistik-Karten -->
-                    <div class="row g-3" id="statsContainer">
-                        <!-- Gesamtanzahl Verträge -->
-                        <div class="col-md-2 col-sm-4 stat-item" data-category="all">
-                            <div class="stat-card">
-                                <h3><?= htmlspecialchars($totalContracts) ?></h3>
-                                <p>Gesamt-Verträge</p>
-                            </div>
-                        </div>
-                        <!-- Anzahl aktive Verträge -->
-                        <div class="col-md-2 col-sm-4 stat-item" data-category="all">
-                            <div class="stat-card">
-                                <h3><?= htmlspecialchars($activeCount) ?></h3>
-                                <p>Aktive Verträge</p>
-                            </div>
-                        </div>
-                        <!-- Anzahl gekündigte Verträge -->
-                        <div class="col-md-2 col-sm-4 stat-item" data-category="all">
-                            <div class="stat-card">
-                                <h3><?= htmlspecialchars($canceledCount) ?></h3>
-                                <p>Gekündigte Verträge</p>
-                            </div>
-                        </div>
-                        <!-- Gesamtkosten (aktiv) -->
-                        <div class="col-md-2 col-sm-4 stat-item" data-category="all">
-                            <div class="stat-card">
-                                <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
-                                <p>Gesamtkosten (aktiv)</p>
-                            </div>
-                        </div>
-                        <!-- Kosten im Monat -->
-                        <div class="col-md-2 col-sm-4 stat-item" data-category="all">
-                            <div class="stat-card">
-                                <h3><?= number_format($totalMonthlyCosts, 2, ',', '.') ?> €</h3>
-                                <p>Kosten im Monat</p>
-                            </div>
-                        </div>
-                        <!-- Kosten im Jahr -->
-                        <div class="col-md-2 col-sm-4 stat-item" data-category="all">
-                            <div class="stat-card">
-                                <h3><?= number_format($totalYearlyCosts, 2, ',', '.') ?> €</h3>
-                                <p>Kosten im Jahr</p>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Diagramm-Buttons -->
-                    <div class="diagram-buttons mt-4">
-                        <button class="btn btn-outline-primary" id="btnMonthlyCosts">Kosten im Monat</button>
-                        <button class="btn btn-outline-success" id="btnYearlyCosts">Kosten im Jahr</button>
-                        <button class="btn btn-outline-info" id="btnCombinedCosts">Monat & Jahr</button>
-                    </div>
-                    <!-- Diagramme -->
-                    <div class="chart-container" id="monthlyCostsChartContainer">
-                        <canvas id="monthlyCostsChart"></canvas>
-                    </div>
-                    <div class="chart-container" id="yearlyCostsChartContainer">
-                        <canvas id="yearlyCostsChart"></canvas>
-                    </div>
-                    <div class="chart-container" id="combinedCostsChartContainer">
-                        <canvas id="combinedCostsChart"></canvas>
+                    <!-- Diagramm-Container -->
+                    <div class="chart-container" id="selectedChartContainer">
+                        <canvas id="selectedChart"></canvas>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -738,124 +721,79 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         // Kategorie-IDs zu Namen aus PHP übertragen
         const categories = <?= $categoryNameJson; ?>;
 
-        // Chart.js Diagramme erstellen
-        let monthlyCostsChart, yearlyCostsChart, combinedCostsChart;
+        // Globale Variable für das aktuelle Diagramm
+        let currentChart = null;
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Monatliche Kosten Diagramm
-            const ctxMonthly = document.getElementById('monthlyCostsChart').getContext('2d');
-            monthlyCostsChart = new Chart(ctxMonthly, {
-                type: 'bar',
-                data: {
-                    labels: ['Monatliche Kosten'],
-                    datasets: [{
-                        label: 'Kosten im Monat (€)',
-                        data: [<?= $totalMonthlyCosts ?>],
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
+        // Funktion zum Erstellen des Diagramms
+        function createChart(chartType) {
+            const ctx = document.getElementById('selectedChart').getContext('2d');
 
-            // Jährliche Kosten Diagramm
-            const ctxYearly = document.getElementById('yearlyCostsChart').getContext('2d');
-            yearlyCostsChart = new Chart(ctxYearly, {
-                type: 'bar',
-                data: {
-                    labels: ['Jährliche Kosten'],
-                    datasets: [{
-                        label: 'Kosten im Jahr (€)',
-                        data: [<?= $totalYearlyCosts ?>],
-                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
+            // Lösche das bestehende Diagramm, falls vorhanden
+            if (currentChart) {
+                currentChart.destroy();
+            }
 
-            // Kombinierte Kosten Diagramm
-            const ctxCombined = document.getElementById('combinedCostsChart').getContext('2d');
-            combinedCostsChart = new Chart(ctxCombined, {
-                type: 'bar',
-                data: {
-                    labels: ['Kosten'],
-                    datasets: [
-                        {
+            if (chartType === 'monthly') {
+                currentChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Monatliche Kosten'],
+                        datasets: [{
                             label: 'Kosten im Monat (€)',
                             data: [<?= $totalMonthlyCosts ?>],
                             backgroundColor: 'rgba(54, 162, 235, 0.6)',
                             borderColor: 'rgba(54, 162, 235, 1)',
                             borderWidth: 1
-                        },
-                        {
-                            label: 'Kosten im Jahr (€)',
-                            data: [<?= $totalYearlyCosts ?>],
-                            backgroundColor: 'rgba(255, 206, 86, 0.6)',
-                            borderColor: 'rgba(255, 206, 86, 1)',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
                         }
                     }
-                }
-            });
-
-            // Diagramm-Buttons Event Listener
-            document.getElementById('btnMonthlyCosts').addEventListener('click', function() {
-                toggleChart('monthly');
-            });
-            document.getElementById('btnYearlyCosts').addEventListener('click', function() {
-                toggleChart('yearly');
-            });
-            document.getElementById('btnCombinedCosts').addEventListener('click', function() {
-                toggleChart('combined');
-            });
-        });
-
-        function toggleChart(chartType) {
-            // Verstecke alle Diagramme
-            document.getElementById('monthlyCostsChartContainer').style.display = 'none';
-            document.getElementById('yearlyCostsChartContainer').style.display = 'none';
-            document.getElementById('combinedCostsChartContainer').style.display = 'none';
-
-            // Zeige das ausgewählte Diagramm
-            if (chartType === 'monthly') {
-                document.getElementById('monthlyCostsChartContainer').style.display = 'block';
-                monthlyCostsChart.update();
+                });
             } else if (chartType === 'yearly') {
-                document.getElementById('yearlyCostsChartContainer').style.display = 'block';
-                yearlyCostsChart.update();
-            } else if (chartType === 'combined') {
-                document.getElementById('combinedCostsChartContainer').style.display = 'block';
-                combinedCostsChart.update();
+                currentChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Jährliche Kosten'],
+                        datasets: [{
+                            label: 'Kosten im Jahr (€)',
+                            data: [<?= $totalYearlyCosts ?>],
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
             }
         }
+
+        // Event Listener für Diagramm-Buttons
+        document.getElementById('btnOpenMonthlyCosts').addEventListener('click', function() {
+            createChart('monthly');
+            const chartsModal = new bootstrap.Modal(document.getElementById('chartsModal'));
+            chartsModal.show();
+        });
+
+        document.getElementById('btnOpenYearlyCosts').addEventListener('click', function() {
+            createChart('yearly');
+            const chartsModal = new bootstrap.Modal(document.getElementById('chartsModal'));
+            chartsModal.show();
+        });
 
         // Funktion zum Öffnen des Modals mit Vertragsdetails
         const contractModal = new bootstrap.Modal(document.getElementById('contractModal'), {
@@ -906,26 +844,21 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             return `${parts[2]}.${parts[1]}.${parts[0]}`;
         }
 
-        // Suchfunktion für Statistiken
-        function filterStatistics() {
-            const searchInput = document.getElementById('searchStatsInput').value.toLowerCase();
-            const selectedCategory = document.getElementById('filterCategory').value;
-            const statItems = document.querySelectorAll('.stat-item');
+        // Suchfunktion
+        function filterContracts() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const contracts = document.querySelectorAll('.contract-card-item');
 
-            statItems.forEach(item => {
-                const category = item.getAttribute('data-category');
-                const statText = item.textContent.toLowerCase();
+            contracts.forEach(function(contract) {
+                const card = contract.querySelector('.contract-card');
+                const name = card.querySelector('h5').textContent.toLowerCase();
+                const provider = card.querySelector('p:nth-child(2)').textContent.toLowerCase();
 
-                // Überprüfe, ob der Text dem Suchfilter entspricht
-                const matchesSearch = statText.includes(searchInput);
-
-                // Überprüfe, ob die Kategorie übereinstimmt
-                const matchesCategory = (selectedCategory === 'all') || (item.getAttribute('data-category') == selectedCategory);
-
-                if (matchesSearch && matchesCategory) {
-                    item.style.display = '';
+                if (name.includes(filter) || provider.includes(filter)) {
+                    contract.style.display = '';
                 } else {
-                    item.style.display = 'none';
+                    contract.style.display = 'none';
                 }
             });
         }
