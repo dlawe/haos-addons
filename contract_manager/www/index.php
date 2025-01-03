@@ -263,6 +263,7 @@ foreach ($categories as $catId => $catInfo) {
 
 $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 ?>
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -361,7 +362,6 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             width: 100%;
             max-width: 400px;
             margin: 0 auto;
-            height: 300px; /* Feste Höhe für das Diagramm */
         }
 
         /* Anpassung des Modals */
@@ -383,15 +383,11 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
             color: #007bff;
             margin-right: 5px;
         }
-        .modal-pdf {
+        .modal-pdf iframe {
             width: 100%;
-            height: 100%;
+            height: 400px;
             border: none;
             border-radius: 8px;
-        }
-        .pdf-container {
-            width: 100%;
-            height: 100%;
         }
         .modal-footer {
             background-color: #f8f9fa;
@@ -404,31 +400,18 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 
         /* Responsive Anpassungen */
         @media (max-width: 768px) {
-            .chart-container {
-                height: 250px; /* Anpassung für kleinere Bildschirme */
+            .stat-content {
+                flex-direction: column;
             }
-        }
-
-        /* Reduzierte vertikale Abstände im Modal */
-        .contract-details .mb-2 {
-            margin-bottom: 0.5rem; /* Ändere von mb-3 (1rem) zu mb-2 (0.5rem) */
-        }
-
-        /* Optional: Weitere Feinabstimmungen */
-        .contract-details h6 {
-            margin-bottom: 0.2rem;
-        }
-        .contract-details p {
-            margin-bottom: 0.5rem;
-        }
-
-        /* Sicherstellen, dass die Modal-Body-Rows und -Columns gleich hoch sind */
-        .modal-body .row {
-            display: flex;
-            align-items: stretch; /* Stellt sicher, dass beide Spalten die gleiche Höhe haben */
-        }
-        .contract-details, .pdf-container {
-            flex: 1;
+            .chart-container {
+                max-width: 100%;
+            }
+            .contract-card {
+                width: 100%;
+            }
+            .modal-pdf iframe {
+                height: 300px;
+            }
         }
     </style>
 </head>
@@ -467,53 +450,53 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
 
     <!-- Hauptcontainer -->
     <div class="container my-4">
-        <!-- Statistiksektion oben -->
-        <div class="row mb-4">
-            <div class="col-12">
+        <div class="row">
+            <!-- Statistik-Bereich -->
+            <div class="col-lg-4 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title mb-4">Statistiken</h5>
+                        <h5 class="card-title">Statistiken</h5>
                         <div class="search-bar">
                             <input type="text" id="searchInput" class="form-control" placeholder="Verträge suchen..." onkeyup="filterContracts()">
                         </div>
                         <div class="row g-3">
                             <!-- Gesamtanzahl Verträge -->
-                            <div class="col-md-4 col-sm-6">
+                            <div class="col-6">
                                 <div class="stat-card">
                                     <h3><?= htmlspecialchars($totalContracts) ?></h3>
                                     <p>Gesamt-Verträge</p>
                                 </div>
                             </div>
                             <!-- Anzahl aktive Verträge -->
-                            <div class="col-md-4 col-sm-6">
+                            <div class="col-6">
                                 <div class="stat-card">
                                     <h3><?= htmlspecialchars($activeCount) ?></h3>
                                     <p>Aktive Verträge</p>
                                 </div>
                             </div>
                             <!-- Anzahl gekündigte Verträge -->
-                            <div class="col-md-4 col-sm-6">
+                            <div class="col-6">
                                 <div class="stat-card">
                                     <h3><?= htmlspecialchars($canceledCount) ?></h3>
                                     <p>Gekündigte Verträge</p>
                                 </div>
                             </div>
                             <!-- Gesamtkosten (aktiv) -->
-                            <div class="col-md-4 col-sm-6">
+                            <div class="col-6">
                                 <div class="stat-card">
                                     <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
                                     <p>Gesamtkosten (aktiv)</p>
                                 </div>
                             </div>
                             <!-- Kosten im Monat -->
-                            <div class="col-md-4 col-sm-6">
+                            <div class="col-6">
                                 <div class="stat-card">
                                     <h3><?= number_format($totalMonthlyCosts, 2, ',', '.') ?> €</h3>
                                     <p>Kosten im Monat</p>
                                 </div>
                             </div>
                             <!-- Kosten im Jahr -->
-                            <div class="col-md-4 col-sm-6">
+                            <div class="col-6">
                                 <div class="stat-card">
                                     <h3><?= number_format($totalYearlyCosts, 2, ',', '.') ?> €</h3>
                                     <p>Kosten im Jahr</p>
@@ -529,14 +512,12 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Vertragsübersicht unten -->
-        <div class="row">
-            <div class="col-12">
+            <!-- Vertragskarten-Bereich -->
+            <div class="col-lg-8">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title mb-4">Vertragsübersicht</h5>
+                        <h5 class="card-title">Vertragsübersicht</h5>
                         <div class="row row-cols-1 row-cols-md-2 g-4" id="contractsContainer">
                             <?php while ($row = $contracts->fetchArray(SQLITE3_ASSOC)): ?>
                                 <?php
@@ -579,55 +560,54 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                 </div>
                 <div class="modal-body">
                     <div class="row">
-                        <!-- Details und Buttons -->
-                        <div class="col-md-6 d-flex flex-column contract-details">
-                            <div class="mb-2">
+                        <!-- Details -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <h6><i class="fas fa-building"></i> Anbieter:</h6>
                                 <p id="modalProvider"></p>
                             </div>
-                            <div class="mb-2">
+                            <div class="mb-3">
                                 <h6><i class="fas fa-user"></i> Vertragsnehmer:</h6>
                                 <p id="modalHolder"></p>
                             </div>
-                            <div class="mb-2">
+                            <div class="mb-3">
                                 <h6><i class="fas fa-euro-sign"></i> Kosten:</h6>
                                 <p id="modalCost"></p>
                             </div>
-                            <div class="mb-2">
+                            <div class="mb-3">
                                 <h6><i class="fas fa-calendar-alt"></i> Start:</h6>
                                 <p id="modalStart"></p>
                             </div>
-                            <div class="mb-2">
+                            <div class="mb-3">
                                 <h6><i class="fas fa-calendar-alt"></i> Ende:</h6>
                                 <p id="modalEnd"></p>
                             </div>
-                            <div class="mb-2">
+                            <div class="mb-3">
                                 <h6><i class="fas fa-clock"></i> Laufzeit (Monate):</h6>
                                 <p id="modalDuration"></p>
                             </div>
-                            <div class="mb-2">
+                            <div class="mb-3">
                                 <h6><i class="fas fa-hourglass-start"></i> Kündigungsfrist (Monate):</h6>
                                 <p id="modalCancellation"></p>
                             </div>
-                            <div class="mb-2">
+                            <div class="mb-3">
                                 <h6><i class="fas fa-tags"></i> Kategorie:</h6>
                                 <p id="modalCategory"></p>
                             </div>
-                            <!-- Buttons nach links setzen -->
-                            <div class="mt-auto">
+                        </div>
+                        <!-- PDF -->
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-file-pdf"></i> Vertragsdokument:</h6>
+                            <div class="mt-2">
+                                <iframe id="modalPdf" src="" class="modal-pdf"></iframe>
+                            </div>
+                            <div class="mt-3">
                                 <a href="#" id="downloadPdf" class="btn btn-danger me-2" target="_blank">
                                     <i class="fas fa-download"></i> PDF herunterladen
                                 </a>
                                 <a href="#" id="openPdf" class="btn btn-primary" target="_blank">
                                     <i class="fas fa-external-link-alt"></i> PDF öffnen
                                 </a>
-                            </div>
-                        </div>
-                        <!-- PDF -->
-                        <div class="col-md-6 d-flex flex-column">
-                            <h6><i class="fas fa-file-pdf"></i> Vertragsdokument:</h6>
-                            <div class="pdf-container flex-grow-1 mt-2">
-                                <iframe id="modalPdf" src="" class="modal-pdf"></iframe>
                             </div>
                         </div>
                     </div>
@@ -702,13 +682,14 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                             <button type="submit" class="btn btn-primary">Vertrag hinzufügen</button>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
                         </div>
-                        <!-- CSRF-Token hinzufügen (Optional) -->
-                        <!-- <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']); ?>"> -->
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Bootstrap Modal für Vertragsdetails (unverändert) -->
+    <!-- ... (Der bereits vorhandene Modal-Code bleibt unverändert) ... -->
 
     <!-- Bootstrap JS und Abhängigkeiten -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -777,8 +758,6 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                     modalPdf.src = contract.pdf_path;
                     document.getElementById('downloadPdf').href = contract.pdf_path;
                     document.getElementById('openPdf').href = contract.pdf_path;
-                    document.getElementById('downloadPdf').classList.remove('disabled');
-                    document.getElementById('openPdf').classList.remove('disabled');
                 } else {
                     modalPdf.src = 'about:blank';
                     document.getElementById('downloadPdf').href = '#';
@@ -818,19 +797,6 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                 }
             });
         }
-
-        // Optional: Automatisches Schließen des Add-Vertrag-Modals nach erfolgreichem Hinzufügen
-        <?php if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($errors)): ?>
-            document.addEventListener('DOMContentLoaded', function() {
-                // Schließe das Add-Vertrag-Modals nach 2 Sekunden
-                setTimeout(function() {
-                    var addContractModal = bootstrap.Modal.getInstance(document.getElementById('addContractModal'));
-                    if (addContractModal) {
-                        addContractModal.hide();
-                    }
-                }, 2000);
-            });
-        <?php endif; ?>
     </script>
 </body>
 </html>
