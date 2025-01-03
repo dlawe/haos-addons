@@ -299,23 +299,23 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         .stat-card {
             background: #ffffff;
             border-radius: 8px;
-            padding: 20px;
+            padding: 10px; /* Verkleinertes Padding */
             text-align: center;
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 3px 9px rgba(0,0,0,0.15);
         }
         .stat-card h3 {
             margin: 0;
-            font-size: 1.5rem;
+            font-size: 1.2rem; /* Verkleinerte Schriftgröße */
             color: #007bff;
         }
         .stat-card p {
-            margin: 10px 0 0;
-            font-size: 1rem;
+            margin: 5px 0 0;
+            font-size: 0.9rem; /* Verkleinerte Schriftgröße */
             color: #555;
         }
 
@@ -359,9 +359,10 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         /* Anpassung des Diagramms */
         .chart-container {
             width: 100%;
-            max-width: 400px;
+            max-width: 600px;
             margin: 0 auto;
-            height: 300px; /* Feste Höhe für das Diagramm */
+            height: 400px; /* Feste Höhe für das Diagramm */
+            display: none; /* Standardmäßig versteckt */
         }
 
         /* Anpassung des Modals */
@@ -405,7 +406,7 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         /* Responsive Anpassungen */
         @media (max-width: 768px) {
             .chart-container {
-                height: 250px; /* Anpassung für kleinere Bildschirme */
+                height: 300px; /* Anpassung für kleinere Bildschirme */
             }
         }
 
@@ -429,6 +430,15 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         }
         .contract-details, .pdf-container {
             flex: 1;
+        }
+
+        /* Button-Styling für Diagramme */
+        .diagram-buttons {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .diagram-buttons .btn {
+            margin: 0 10px;
         }
     </style>
 </head>
@@ -478,53 +488,63 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
                         </div>
                         <div class="row g-3">
                             <!-- Gesamtanzahl Verträge -->
-                            <div class="col-md-4 col-sm-6">
+                            <div class="col-md-2 col-sm-4">
                                 <div class="stat-card">
                                     <h3><?= htmlspecialchars($totalContracts) ?></h3>
                                     <p>Gesamt-Verträge</p>
                                 </div>
                             </div>
                             <!-- Anzahl aktive Verträge -->
-                            <div class="col-md-4 col-sm-6">
+                            <div class="col-md-2 col-sm-4">
                                 <div class="stat-card">
                                     <h3><?= htmlspecialchars($activeCount) ?></h3>
                                     <p>Aktive Verträge</p>
                                 </div>
                             </div>
                             <!-- Anzahl gekündigte Verträge -->
-                            <div class="col-md-4 col-sm-6">
+                            <div class="col-md-2 col-sm-4">
                                 <div class="stat-card">
                                     <h3><?= htmlspecialchars($canceledCount) ?></h3>
                                     <p>Gekündigte Verträge</p>
                                 </div>
                             </div>
                             <!-- Gesamtkosten (aktiv) -->
-                            <div class="col-md-4 col-sm-6">
+                            <div class="col-md-2 col-sm-4">
                                 <div class="stat-card">
                                     <h3><?= number_format($totalCosts, 2, ',', '.') ?> €</h3>
                                     <p>Gesamtkosten (aktiv)</p>
                                 </div>
                             </div>
                             <!-- Kosten im Monat -->
-                            <div class="col-md-4 col-sm-6">
+                            <div class="col-md-2 col-sm-4">
                                 <div class="stat-card">
                                     <h3><?= number_format($totalMonthlyCosts, 2, ',', '.') ?> €</h3>
                                     <p>Kosten im Monat</p>
                                 </div>
                             </div>
                             <!-- Kosten im Jahr -->
-                            <div class="col-md-4 col-sm-6">
+                            <div class="col-md-2 col-sm-4">
                                 <div class="stat-card">
                                     <h3><?= number_format($totalYearlyCosts, 2, ',', '.') ?> €</h3>
                                     <p>Kosten im Jahr</p>
                                 </div>
                             </div>
                         </div>
-                        <!-- Diagramm -->
-                        <div class="mt-4">
-                            <div class="chart-container">
-                                <canvas id="costChart"></canvas>
-                            </div>
+                        <!-- Diagramm-Buttons -->
+                        <div class="diagram-buttons mt-4">
+                            <button class="btn btn-outline-primary" id="btnMonthlyCosts">Kosten im Monat</button>
+                            <button class="btn btn-outline-success" id="btnYearlyCosts">Kosten im Jahr</button>
+                            <button class="btn btn-outline-info" id="btnCombinedCosts">Monat & Jahr</button>
+                        </div>
+                        <!-- Diagramme -->
+                        <div class="chart-container" id="monthlyCostsChartContainer">
+                            <canvas id="monthlyCostsChart"></canvas>
+                        </div>
+                        <div class="chart-container" id="yearlyCostsChartContainer">
+                            <canvas id="yearlyCostsChart"></canvas>
+                        </div>
+                        <div class="chart-container" id="combinedCostsChartContainer">
+                            <canvas id="combinedCostsChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -717,39 +737,124 @@ $categoryNameJson = json_encode($categoryNames, JSON_UNESCAPED_UNICODE);
         // Kategorie-IDs zu Namen aus PHP übertragen
         const categories = <?= $categoryNameJson; ?>;
 
-        // Chart.js Diagramm erstellen
-        document.addEventListener('DOMContentLoaded', function() {
-            const ctx = document.getElementById('costChart').getContext('2d');
-            const catLabels = <?= $categoryLabels ?>; // ["Strom","Gas","Internet",...]
-            const catCosts  = <?= $categoryCosts ?>;  // [120,50,20,...]
-            const chartColors = <?= $categoryChartColors ?>; // ["#007bff", "#28a745", ...]
+        // Chart.js Diagramme erstellen
+        let monthlyCostsChart, yearlyCostsChart, combinedCostsChart;
 
-            new Chart(ctx, {
-                type: 'pie',  // Du kannst 'bar', 'pie', 'doughnut' usw. wählen
+        document.addEventListener('DOMContentLoaded', function() {
+            // Monatliche Kosten Diagramm
+            const ctxMonthly = document.getElementById('monthlyCostsChart').getContext('2d');
+            monthlyCostsChart = new Chart(ctxMonthly, {
+                type: 'bar',
                 data: {
-                    labels: catLabels,
+                    labels: ['Monatliche Kosten'],
                     datasets: [{
-                        label: 'Kosten je Kategorie (€)',
-                        data: catCosts,
-                        backgroundColor: chartColors, // Verwende die gleichen Farben wie in den Vertragskarten
-                        borderColor: '#fff',
+                        label: 'Kosten im Monat (€)',
+                        data: [<?= $totalMonthlyCosts ?>],
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
                         borderWidth: 1
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false, // Damit es auch bei weniger Platz gut aussieht
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                        },
-                        tooltip: {
-                            enabled: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
                         }
                     }
                 }
             });
+
+            // Jährliche Kosten Diagramm
+            const ctxYearly = document.getElementById('yearlyCostsChart').getContext('2d');
+            yearlyCostsChart = new Chart(ctxYearly, {
+                type: 'bar',
+                data: {
+                    labels: ['Jährliche Kosten'],
+                    datasets: [{
+                        label: 'Kosten im Jahr (€)',
+                        data: [<?= $totalYearlyCosts ?>],
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Kombinierte Kosten Diagramm
+            const ctxCombined = document.getElementById('combinedCostsChart').getContext('2d');
+            combinedCostsChart = new Chart(ctxCombined, {
+                type: 'bar',
+                data: {
+                    labels: ['Kosten'],
+                    datasets: [
+                        {
+                            label: 'Kosten im Monat (€)',
+                            data: [<?= $totalMonthlyCosts ?>],
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Kosten im Jahr (€)',
+                            data: [<?= $totalYearlyCosts ?>],
+                            backgroundColor: 'rgba(255, 206, 86, 0.6)',
+                            borderColor: 'rgba(255, 206, 86, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Diagramm-Buttons Event Listener
+            document.getElementById('btnMonthlyCosts').addEventListener('click', function() {
+                toggleChart('monthly');
+            });
+            document.getElementById('btnYearlyCosts').addEventListener('click', function() {
+                toggleChart('yearly');
+            });
+            document.getElementById('btnCombinedCosts').addEventListener('click', function() {
+                toggleChart('combined');
+            });
         });
+
+        function toggleChart(chartType) {
+            // Verstecke alle Diagramme
+            document.getElementById('monthlyCostsChartContainer').style.display = 'none';
+            document.getElementById('yearlyCostsChartContainer').style.display = 'none';
+            document.getElementById('combinedCostsChartContainer').style.display = 'none';
+
+            // Zeige das ausgewählte Diagramm
+            if (chartType === 'monthly') {
+                document.getElementById('monthlyCostsChartContainer').style.display = 'block';
+                monthlyCostsChart.update();
+            } else if (chartType === 'yearly') {
+                document.getElementById('yearlyCostsChartContainer').style.display = 'block';
+                yearlyCostsChart.update();
+            } else if (chartType === 'combined') {
+                document.getElementById('combinedCostsChartContainer').style.display = 'block';
+                combinedCostsChart.update();
+            }
+        }
 
         // Funktion zum Öffnen des Modals mit Vertragsdetails
         const contractModal = new bootstrap.Modal(document.getElementById('contractModal'), {
